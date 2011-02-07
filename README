@@ -1,0 +1,3 @@
+bigdoorjs is intended to provide access to the BigDoor API for serverside javascript applications.
+
+The goal of the project is to implement a simplified subset of the BigDoor functionality. Ease of use is priority number 1.
