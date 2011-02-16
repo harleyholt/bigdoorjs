@@ -14,7 +14,9 @@ var querystring = require('querystring'),
 	uuid = require('node-uuid'),
 	request = require('request'),
 	crypto = require('crypto'),
-	_ = require('underscore');
+	_ = require('underscore'),
+	urls = require('./urls'),
+	bigdoor_server = require('./servers').bigdoor_server;
 
 var signature = function(secret, url, query, body) {
 	query = query || {};
@@ -38,7 +40,7 @@ var signature = function(secret, url, query, body) {
 }
 
 var token = function() {
-	return uuid().replace(/-/g, '');
+	return uuid().replace(/-/g, '').toLowerCase();
 }
 
 var time = function() {
@@ -47,99 +49,29 @@ var time = function() {
 
 var publisher = function(app_id, app_secret) {
 
-	// an object which maps resource names to URLs
-	// examples:
-	// var a = attibute()
-	// var url = urls.attribute.get(a);
-	// var l = level()
-	// url = urls.level.get(l);
-	var urls = (function() {
-		var that = {};
-		var _get_url = function(url, obj) {
-			if ( obj.id ) {
-				return url.end_point + '/' + obj.id;
-			} else {
-				return url.end_point
-			}
-		}
-
-		that.extend({
-			attribute: {
-				end_point: 'attribute',
-				get: _get_url
-			},
-			currency: {
-				end_point: 'currency',
-				get: _get_url
-			},
-			url: {
-				end_point: 'url',
-				get: _get_url,
-			},
-			award_group: {
-				end_point: 'named_award_collection',
-				get: _get_url
-			},
-			award: {
-				end_point: 'named_award',
-				get: function(url, obj) {
-					return that.award_group.get(obj.award_group) +
-						'/' + _get_url(url, obj);
-				}
-			},
-			good_group: {
-				end_point: 'named_good_collection',
-				get: _get_url
-			},
-			good: {
-				end_point: 'named_good',
-				get: _get_url
-			},
-			level_group: {
-				end_point: 'named_level_collection',
-				get: _get_url
-			},
-			level: {
-				end_point: 'named_level',
-				get: function(url, obj) {
-					return that.level_group.get(obj.level_group) + 
-						'/' + _get_url(url, obj);
-				}
-			},
-			end_user: {
-				end_point: 'end_user',
-				get: _get_url
-			},
-			transaction: {
-				end_point: 'named_transaction_group',
-				get: _get_url
-			},
-			subtransaction: {
-				end_point: 'named_transaction',
-				get: function(url, obj) {
-					return that.transaction.get(obj.transaction) + 
-						'/' + _get_url(url, obj);
-				}
-			},
-		});
-	})();
 
 	var urlCollection = function(urls) {
+		return urls;
 	}
 
 	var levelCollection = function(levels) {
+		return levels;
 	}
 
 	// a collection of awards to be used internally by awardGroup
 	var awardCollection = function(awards) {
-		// don't yet know this part
+		return awards;
 	}
 
 	var goodCollection = function(goods) {
-		// don't yet know
+		return goods;
 	}
 
+	var subtransactionCollection = function(subtransactions) {
+		return subtransactions;
+	}
 
+	// return a signed URL given a url, query, and body
 	var secure_url = function(url, query, body) {
 			var sign = signature(app_secret, url, query, body);
 			query['sig'] = sign;
@@ -150,19 +82,29 @@ var publisher = function(app_id, app_secret) {
 			return url;
 	}
 
+	// adds all necessary processing to a basic request in order to 
+	// meet the security requirements of secure requests and then
+	// actually preforms the request
 	var secure_server = {
+		complete_url: function(url) {
+			if (!url.match(/^\//)) {
+				url = '/'+url;
+			}
+			return 'http://local.publisher.bigdoor.com' + url;
+		},
 		action: function(method, url, query, body, callback) {
+			var t = time();
 			query = query || {};
-			query['time'] = time();
+			query['time'] = t;
 			body = body || {};
 			body['token'] = token();
-			body['time'] = time();
+			body['time'] = t;
 
 			url = secure_url(url, query, body);
 			request(
 				{
 					method: method,
-					url:url,
+					url: this.complete_url(url),
 					body: querystring.stringify(body)
 				},
 				callback
@@ -176,7 +118,7 @@ var publisher = function(app_id, app_secret) {
 			request(
 				{
 					method: 'GET',
-					url:url
+					url: this.complete_url(url)
 				},
 				callback
 			);
@@ -192,73 +134,7 @@ var publisher = function(app_id, app_secret) {
 		}
 	}
 
-	server = {
-		complete_url: function(url) {
-			if( !url.match(/^\//) ) { 
-				url = '/'+url; 
-			}
-			return 'http://api.bigdoor.com/api/publisher/'+app_id+url
-		},
-		get: function(url, query, callback) {
-			secure_server.get(complete_url(url), query, callback);
-		},
-		put: function(url, query, body, callback) {
-			secure_server.put(complete_url(url), query, body, callback);
-		},
-		post: function(url, query, body, callback) {
-			secure_server.post(complete_url(url), query, body, callback);
-		},
-		delete: function(url, query, body, callback) {
-			secure_server.delete(complete_url(url), query, body, callback);
-		},
-		get_http_methods: function(methods) {
-			// example:
-			// get_http_methods('get', 'post');
-			// get_http_methods('get');
-			// get_http_methods(['get', 'post', 'put']);'
-			// get_http_methods(); // returns all methods
-			var result = {}
-			if ( !methods ) {
-				methods = ['get', 'put', 'post', 'delete'];
-			}
-			if ( !_.isArray(methods) ) {
-				methods = _.toArray(arguments);
-			}
-			methods = _.map(methods, function(x) {
-				if ( this[x.toLowerCase()] ) {
-					return x.toLowerCase();
-				}
-			});
-
-			for ( var i = 0; i < methods.length; i++ ) {
-				results[methods[i]] = function(context, name, fun) {
-					if ( name == 'get' ) {
-						return function(obj, callback) {
-							var request_content = obj.request_content();
-							context.get(
-								request_content.url,
-								request_content.query,
-								callback
-							);
-						}
-					} else {
-						return function(obj, callback) {
-							var request_content = obj.request_content();
-							context.get(
-								request_content.url,
-								request_content.query,
-								request_content.body,
-								callback
-							);
-						}
-					}
-				}(this, methods[i], this[methods[i]]);
-			}
-
-			return results;
-		}
-	}
-
+	// returns the default content of any request made
 	var loyalty_content = function(obj, resource_name, body) {
 		return {
 			url: urls[resource_name].get(obj),
@@ -270,15 +146,49 @@ var publisher = function(app_id, app_secret) {
 		}
 	}
 
+	// server allows raw access to get, put, post, delete
+	// with url, query, and body parameters
+	var server = bigdoor_server(secure_server, app_id);
+	// object server takes the raw server and instead allows pub objects
+	// to be used as arguments with url, query, and body arguments being
+	// infered from this
+	var object_server = server.get_http_methods();
+
+	var create_or_update = function(callback) {
+		if ( this.id ) {
+			object_server.put(this, callback);
+		} else {
+			object_server.post(this, callback);
+		}
+	}
+
+	// the pub object is returned
+	// the purpose of the resource objects contained with in is to define
+	// their properties and 
 	var pub = {
 		// A user object 
-		end_user: function(obj) {
+		user: function(obj) {
 			return {
+				request_content: function() {
+					return {
+						url: urls['user'].get(this),
+						query: {},
+						body: {
+							end_user_login: this.login,
+							guid: this.guid,
+							best_guess_name: this.best_guess_name,
+							best_guess_profile_img: this.best_guess_profile_image
+						}
+					}
+				},
+				save: function(callback) { 
+					create_or_update.call(this, callback);
+				},
 				// obj can either be object or string (used as end_user_login)
-				end_user_login: obj.end_user_login || obj,
+				login: obj.login || obj,
 				best_guess_name: obj.best_guess_name ||'' ,
 				best_guess_profile_image: obj.best_guess_profile_image || '',
-				guid: guid()
+				guid: obj.guid || guid()
 			}
 		},
 		// Give an object the basic fields used by BigDoor objects.
@@ -286,7 +196,7 @@ var publisher = function(app_id, app_secret) {
 		// If the argument object includes an id and created 
 		// time those will also be added.
 		loyalty: function(obj) {
-			var that = {
+			return {
 				id: obj.id, // may be undefined (this is fine and desired)
 				title: obj.title,
 				description: obj.description,
@@ -294,10 +204,10 @@ var publisher = function(app_id, app_secret) {
 				modified: obj.modified,
 				loyalty_body_content: function() {
 					return {
-						pub_title: that.title,
-						pub_description: that.description,
-						end_user_title: that.title,
-						end_user_description: that.description
+						pub_title: this.title,
+						pub_description: this.description,
+						end_user_title: this.title,
+						end_user_description: this.description
 					}
 				}
 			}
@@ -324,10 +234,13 @@ var publisher = function(app_id, app_secret) {
 						}, extras)
 					);
 				},
+				save: function(callback) { 
+					create_or_update.call(this, callback);
+				},
 				currency: obj.currency,
 				default_amount: obj.default_amount || 1.00,
 				is_source: obj.is_source || true,
-				transaction: null,
+				transaction: obj.transaction,
 				variable_amount: function(percent) {
 					this.group_ratio = percent;
 					this.variable_amount_allowed = true;
@@ -347,10 +260,10 @@ var publisher = function(app_id, app_secret) {
 		// user a good
 		transaction: function(obj, primarySubtransaction) {
 			var private = {
-				non_secure: obj.allow_unsigned_transactions || false,
+				non_secure: obj.non_secure || false,
 				primary_subtransaction: primarySubtransaction
 			};
-			var subtransactions = [primarySubtransaciton]
+			var subtransactions = [primarySubtransaction]
 			if ( arguments.length > 2 ) {
 				this.subtransactions.concat(_.rest(_.toArray(arguments),2));
 			}
@@ -367,8 +280,11 @@ var publisher = function(app_id, app_secret) {
 						}
 					);
 				},
-				end_user_cap: -1,
-				end_user_cap_interval: -1,
+				save: function(callback) { 
+					create_or_update.call(this, callback);
+				},
+				end_user_cap: obj.end_user_cap || -1,
+				end_user_cap_interval: obj.end_user_cap_interval || -1,
 				subtransactions: subtransactionCollection(subtransactions),
 				unsecure: function() {
 					private.non_secure = true;
@@ -385,11 +301,9 @@ var publisher = function(app_id, app_secret) {
 			// if obj is number assume it is an ID which we need to retrieve
 			// if obj is an object assume it holds values that we need
 			// if obj is a string assume it is a friendly_id
-
-			var _server = server.get_http_methods();
 			return _.extend(this.loyalty(obj), {
 				request_content: function() {
-					return loyatly_content(
+					return loyalty_content(
 						this,
 						'attribute', 
 						{
@@ -397,14 +311,10 @@ var publisher = function(app_id, app_secret) {
 						}
 					);
 				},
-				friendly_id: obj.friendly_id,
-				save: function() {
-					if ( this.id ) {
-						_server.post(this, callback);
-					} else {
-						_server.put(this, callback);
-					}
-				}
+				save: function(callback) { 
+					create_or_update.call(this, callback);
+				},
+				friendly_id: obj.friendly_id
 			});
 		},
 		// A URL object
@@ -419,7 +329,6 @@ var publisher = function(app_id, app_secret) {
 		//     description: 'Example of creating a URL
 		// });
 		url: function(obj) {
-			var _server = server.get_http_methods();
 			return _.extend(this.loyalty(obj), {
 				request_content: function() {
 					return loyalty_content(
@@ -431,6 +340,9 @@ var publisher = function(app_id, app_secret) {
 							url: this.url
 						}
 					);
+				},
+				save: function(callback) { 
+					create_or_update.call(this, callback);
 				},
 				id: obj.id || null,
 				url: obj.url || obj,
@@ -450,13 +362,6 @@ var publisher = function(app_id, app_secret) {
 						_.extend(obj, urlCollection());
 					} 
 					obj.link(this);
-				},
-				save: function(callback) {
-					if ( this.id ) {
-						_server.create(this, callback);
-					} else {
-						_server.update(this, callback);
-					}
 				}
 			});
 		},
@@ -472,6 +377,9 @@ var publisher = function(app_id, app_secret) {
 							relative_weight: 1
 						}
 					);
+				},
+				save: function(callback) { 
+					create_or_update.call(this, callback);
 				},
 				exchange_rate: obj.exchange_rate || 1, // points to dollars
 				type: obj.type || 5, // default: non-redeemable XP 
@@ -501,15 +409,6 @@ var publisher = function(app_id, app_secret) {
 						default_amount: amount,
 						is_source: false
 					}));
-				},
-				save: function() {
-					throw 'not implemented'
-					//save the currency to the server (create or update)
-					if ( this.id ) {
-						return
-					} else {
-						return
-					}
 				}
 			});
 		},
@@ -523,6 +422,9 @@ var publisher = function(app_id, app_secret) {
 							currency_id: currency.id || currency
 						}
 					);
+				},
+				save: function(callback) { 
+					create_or_update.call(this, callback);
 				},
 				currency: obj.currency,
 				levels: levelCollection(levels)
@@ -540,16 +442,19 @@ var publisher = function(app_id, app_secret) {
 						}
 					);
 				},
+				save: function(callback) { 
+					create_or_update.call(this, callback);
+				},
 				threshold: obj.threshold,
 				currency: function() {
 					return group.currency;
 				},
-				group: null
+				group: obj.group
 			});
 		},
 		awardGroup: function(obj, awards) {
 			var private = {
-				non_secure: (obj.non_secure || false)?1:0
+				non_secure: obj.non_secure || false
 			}
 			return _.extend(this.loyalty(obj), {
 				request_content: function() {
@@ -562,9 +467,12 @@ var publisher = function(app_id, app_secret) {
 						}
 					);
 				},
+				save: function(callback) { 
+					create_or_update.call(this, callback);
+				},
 				awards: awardCollection(awards),
 				unsecure: function() {
-					private.non_secure = 1;
+					private.non_secure = true;
 					return this;
 				}
 			});
@@ -581,10 +489,13 @@ var publisher = function(app_id, app_secret) {
 						}
 					);
 				},
+				save: function(callback) { 
+					create_or_update.call(this, callback);
+				},
 				grant: function() {
 					// give to a user
 				},
-				group: null, // the award group this belongs to
+				group: obj.group, // the award group this belongs to
 			});
 		},
 		goodGroup: function(obj, goods) {
@@ -595,6 +506,9 @@ var publisher = function(app_id, app_secret) {
 						'goodGroup',
 						{}
 					);
+				},
+				save: function(callback) { 
+					create_or_update.call(this, callback);
 				},
 				goods: goodCollection(goods)
 			});
@@ -611,6 +525,9 @@ var publisher = function(app_id, app_secret) {
 						}
 					);
 				},
+				save: function(callback) { 
+					create_or_update.call(this, callback);
+				},
 				// add a good 
 				group: null,
 				give: function(subtransaction) {
@@ -622,6 +539,179 @@ var publisher = function(app_id, app_secret) {
 				}
 			});
 		}
+	}
+
+	// bind the context of the resource functions (effectively constructors)
+	// to the parent pub object
+	for ( var resource in pub ) {
+		pub[resource] = _.bind(pub[resource], pub);
+	}
+
+	// create the conversion function; each function translated the raw server
+	// JSON returns to bigdoorjs representation.
+	//
+	// add a fromJSON function to each resource type
+	var loyalty_conversion = function(jsonObj) {
+		return {
+			id: jsonObj.id,
+			title: jsonObj.end_user_title || jsonObj.pub_title,
+			description: (
+				jsonObj.end_user_description || jsonObj.pub_description
+			),
+			modified: new Date(jsonObj.modified_timestamp*1000),
+			created: new Date(jsonObj.created_timestamp*1000)
+		}
+	}
+
+	pub.loyalty.fromJSON = function(jsonObj) {
+		return pub.loyalty(loyalty_conversion(jsonObj));
+	}
+
+	// define a set of conversions from the server names to the names
+	// used in bigdoor.js
+	var toEmpty = function(jsonObj) { return {}; };
+	var loyalty_conversions = {
+		attribute: toEmpty,
+		currency: function(jsonObj) {
+			return {
+				type: jsonObj.currency_type_id
+			}
+		},
+		url: toEmpty,
+		awardGroup: function(jsonObj) {
+			var temp = {
+				awards: _.map(jsonObj.named_awards, pub.levelGroup.fromJSON)
+			}
+			for ( var i = 0; i < temp.awards.length; i++ ){
+				temp.awards[i].group = temp;
+			}
+			return temp;
+		},
+		award: function(jsonObj) {
+			return {
+				group: jsonObj.named_award_collection_id
+			}
+		},
+		levelGroup: function(jsonObj) {
+			var temp = {
+				levels: _.map(jsonObj.named_levels, pub.levelGroup.fromJSON),
+				currency: jsonObj.currency_id
+			}
+			for ( var i = 0; i <  temp.levels; i++ ) {
+				temp.levels[i].group = temp;
+			}
+			return temp;
+		},
+		level: function(jsonObj) {
+			return {
+				group: jsonObj.named_level_collection_id,
+			}
+		},
+		goodGroup: function(jsonObj) {
+			var temp = {
+				goods: _.map(jsonObj.named_goods, pub.goodGroup.fromJSON),
+			}
+			for ( var i = 0; i < temp.levels; i++ ) {
+				temp.goods[i].group = temp;
+			}
+			return temp;
+		},
+		good: function(jsonObj) {
+			return {
+				group: jsonObj.named_good_collection_id
+			}
+		},
+		subtransaction: function(jsonObj) {
+			return {
+				currency: pub.currency.fromJSON(jsonObj.currency)
+			}
+		}
+	}
+
+	// add the conversions to the resources
+	// the output includes the raw properties, the default properties from
+	// loyalty_conversion, and the specific conversions from the
+	// loyalty_conversions object
+	for ( var i in loyalty_conversions ) {
+		pub[i].fromJSON = function(x) {
+			return function(jsonObj) {
+				return pub[x](
+					_.extend(
+						jsonObj,
+						loyalty_conversion(jsonObj),
+						loyalty_conversions[x](jsonObj)
+					)
+				)
+			}
+		}(i);
+	}
+
+	// transaction is a special conversion case because the resource
+	// function requires a primary subtransaction argument followed
+	// by a set of 0 or more subtransactions
+	pub.transaction.fromJSON = function(jsonObj) {
+		var primary = _.select(
+			jsonObj.named_transactions,
+			function(x) { return x.named_transaction_is_primary }
+		)[0];
+
+		var secondary = _.select(
+			jsonObj.named_transactions,
+			function(x) { return !x.named_transaction_is_primary }
+		);
+
+		primary = pub.subtransaction.fromJSON(primary);
+		secondary = _.map(
+			secondary,
+			pub.subtransaction.fromJSON
+		);
+
+		var obj = _.extend(
+			jsonObj,
+			loyalty_conversion(jsonObj)
+		);
+
+		var arguments = [obj, primary].concat(secondary);
+		return pub.transaction.apply(pub, arguments);
+	}
+
+	// user is a special case because it does not have the default
+	// properties (title, descriptions, etc)
+	pub.user.fromJSON = function(jsonObj) {
+		return pub.user(
+			_.extend(
+				jsonObj,
+				{
+					login: jsonObj.end_user_login,
+					guid: jsonObj.guid
+				}
+			)
+		);
+	}
+
+	// add ability to retrieve resources by their ID
+	var getByID = function(resource, id, callback) {
+		server.get(
+			urls[resource].get({id:id}),
+			{},
+			_.bind(
+				function(error, response, body) {
+					if ( !error ) {
+						callback(
+							null, 
+							this.fromJSON(JSON.parse(body)[0])
+						);
+					} else {
+						callback(error, null);
+					}
+				},
+				this
+			)
+		);
+	}
+
+	for ( var resource in pub ) {
+		pub[resource].get = _.bind(getByID, pub[resource], resource);
 	}
 
 	return pub;
