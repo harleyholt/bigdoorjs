@@ -66,6 +66,7 @@ module.exports.secure_server = function(server, app_secret) {
 			return 'http://local.publisher.bigdoor.com' + url;
 		},
 		action: function(method, url, query, body, callback) {
+			console.log(url);
 			var t = time();
 			query = query || {};
 			query['time'] = t;
@@ -87,7 +88,7 @@ module.exports.secure_server = function(server, app_secret) {
 			query = query || {};
 			query['time'] = time();
 
-			url = secure_url(url, query);
+			url = secure_url(app_secret, url, query);
 			request(
 				{
 					method: 'GET',

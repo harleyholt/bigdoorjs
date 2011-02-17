@@ -4,24 +4,31 @@ var publisher = require('./bigdoor').publisher,
 // harley+test_bdm_rhh507@bigdoor.com
 var pub = publisher('d6e92052c79b4f329c1f79c3a87ce604', 'b0435cee6f3d413c97754574cddeb3f8');
 
-pub.currency({
-	title: 'Mana',
-	description: 'Used for conjuring, spells, witchcraft, and mischief',
-	exchange_rate: 10
-}).save(function(error, cur) {
-	console.log('new currency has ID: ' + cur.id);
-	console.log(cur);
-});
+//pub.currency({
+//	title: 'Mana',
+//	description: 'Used for conjuring, spells, witchcraft, and mischief',
+//	exchange_rate: 10
+//}).save(function(error, cur) {
+//	console.log('new currency has ID: ' + cur.id);
+//	console.log(cur);
+//});
 
-pub.attribute({
-	title: 'Magical',
-	description: 'Attached to all things magical',
-	friendly_id: 'magical'
-}).save(function(error, attr) {
-	console.log('new attribute has ID: ' + attr.id);
-	console.log(attr);
-});
+//BDM BUG: if you delete an attribute and then try to create a new 
+//attribute with the same friendly_id it will fail
+//pub.attribute({
+//	title: 'Magical',
+//	description: 'Attached to all things magical',
+//	friendly_id: 'magic'
+//}).save(function(error, attr) {
+//	console.log('new attribute has ID: ' + attr.id);
+//	console.log(attr);
+//});
 
+//pub.currency.get('XP', function(error, xp) {
+//	console.log(xp);
+//});
+
+/**
 var award1 = pub.award({
 	title: 'Staring Out',
 	description: 'You win the very beginning'
@@ -67,6 +74,7 @@ var book_goods = pub.goodGroup({
 	console.log('AND THE GOOD IS:');
 	console.log(group);
 });
+**/
 
 // COMING SOON SECTION
 

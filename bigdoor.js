@@ -710,8 +710,62 @@ var publisher = function(app_id, app_secret, server) {
 		);
 	}
 
+	var getByTitle = function(resource, title, callback) {
+		server.get(
+			urls[resource].get({}),
+			{'title__startswith': title},
+			_.bind(
+				function(error, response, body) {
+					if ( !error ) {
+						var results = JSON.parse(body)[0];
+
+						// we can't do full equality of titles in
+						// the bigdoor API (best we have is startswith,
+						// so now filter results for full equality
+						results = _.map(
+							_.select(
+								results,
+								function(x) { return x.pub_title == title }
+							),
+							this.fromJSON
+						);
+
+						if ( results.length == 1 ) {
+							results = results[0];
+						} 
+
+						callback(null, results);
+
+					} else {
+						callback(error, null);
+					}
+				},
+				this
+			)
+		);
+	}
+
+	var getWith = function(funs, identifier, callback) {
+		if ( typeof identifier == 'string' ) {
+			funs['title'](identifier, callback);
+		} else if ( typeof identifier == 'number' ) {
+			funs['id'](identifier, callback);
+		} else {
+			throw 'unrecognized get input type: ' + typeof identifier;
+		}
+	}
+
 	for ( var resource in pub ) {
-		pub[resource].get = _.bind(getByID, pub[resource], resource);
+		var funs = {
+			id: _.bind(getByID, pub[resource], resource),
+			title: _.bind(getByTitle, pub[resource], resource)
+		}
+
+		pub[resource].get = _.bind(
+			getWith,
+			pub[resource],
+			funs
+		);
 	}
 
 	return pub;
