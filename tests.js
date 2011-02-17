@@ -3,10 +3,12 @@ var vows = require('vows'),
 	bigdoor = require('./bigdoor'),
 	urls = require('./urls'),
 	testData = require('./test/data').data,
-	server = require('./servers').bigdoor_server;
+	servers = require('./servers');
 
 var publisher = bigdoor.publisher;
-var signature = bigdoor.signature;
+var signature = servers.signature;
+var api_server = servers.api_server;
+var get_http_methods = servers.get_http_methods;
 
 // pulled from example at http://publisher.bigdoor.com/docs/signature
 vows.describe('Secure Request Signing').addBatch({
@@ -66,14 +68,14 @@ var test_attribute = {
 vows.describe('Test the BigdoorServer').addBatch({
 	'the server for the test publisher': {
 		topic: function() {
-			return server(test_server, '522adae4d28b49999bb42e0a21a13889');
+			return api_server(test_server, '522adae4d28b49999bb42e0a21a13889');
 		},
 		'makes the get request for an attribute': function(topic) {
 			var called = false;
 			test_server.assert_on('get', function(url, query, callback) {
 				assert.equal(
 					url,
-					'http://api.bigdoor.com/api/publisher/' + 
+					'/api/publisher/' + 
 						'522adae4d28b49999bb42e0a21a13889/attribute'
 				);
 				assert.isObject(query);
@@ -88,8 +90,8 @@ vows.describe('Test the BigdoorServer').addBatch({
 			test_server.assert_on('post', function(url, query, body, callback) {
 				assert.equal(
 					url,
-					'http://api.bigdoor.com/api/publisher/' + 
-						'522adae4d28b49999bb42e0a21a13889/attribute'
+					'/api/publisher/' + 
+					'522adae4d28b49999bb42e0a21a13889/attribute'
 				);
 				assert.isObject(query);
 				assert.isEmpty(query);
@@ -101,20 +103,20 @@ vows.describe('Test the BigdoorServer').addBatch({
 			assert.isTrue(called);
 		},
 		'returns the correct methods': function(topic) {
-			var test = topic.get_http_methods('get', 'put', 'post', 'delete');
+			var test = get_http_methods(topic, 'get', 'put', 'post', 'delete');
 			assert.include(test, 'get');
 			assert.include(test, 'post');
 			assert.include(test, 'put');
 			assert.include(test, 'delete');
-			test = topic.get_http_methods('get');
+			test = get_http_methods(topic, 'get');
 			assert.include(test, 'get');
 			assert.isUndefined(test['post']);
-			test = topic.get_http_methods();
+			test = get_http_methods(topic);
 			assert.include(test, 'get');
 			assert.include(test, 'post');
 			assert.include(test, 'put');
 			assert.include(test, 'delete');
-			test = topic.get_http_methods(['get', 'post']);
+			test = get_http_methods(topic, ['get', 'post']);
 			assert.include(test, 'get');
 			assert.include(test, 'post');
 			assert.isUndefined(test['put']);
@@ -122,17 +124,21 @@ vows.describe('Test the BigdoorServer').addBatch({
 	},
 	'the methods returned by the BigdoorServer' : {
 		topic: function() {
-			return server(
-				test_server,
-				'522adae4d28b49999bb42e0a21a13889'
-			).get_http_methods('get', 'post')
+			return get_http_methods(
+				api_server(
+					test_server,
+					'522adae4d28b49999bb42e0a21a13889'
+				),
+				'get',
+				'post'
+			);
 		},
 		'lets us retrieve an object from the server': function(topic) {
 			var called = false;
 			test_server.assert_on('get', function(url, query, callback) {
 				assert.equal(
 					url,
-					'http://api.bigdoor.com/api/publisher/' + 
+					'/api/publisher/' + 
 						'522adae4d28b49999bb42e0a21a13889/attribute/10'
 				);
 				called = true;
@@ -141,12 +147,12 @@ vows.describe('Test the BigdoorServer').addBatch({
 			topic.get( test_attribute, null);
 			assert.isTrue(called);
 		},
-		'lets us save an object to the server': function(topic) {
+		'lets us save an attribute to the server': function(topic) {
 			var called = false;
 			test_server.assert_on('post', function(url, query, body, callback) {
 				assert.equal(
 					url,
-					'http://api.bigdoor.com/api/publisher/' + 
+					'/api/publisher/' + 
 						'522adae4d28b49999bb42e0a21a13889/attribute/10'
 				);
 				assert.equal(body.end_user_title, test_attribute.title);
@@ -156,6 +162,10 @@ vows.describe('Test the BigdoorServer').addBatch({
 
 			topic.post(test_attribute, null);
 			assert.isTrue(called);
+		},
+		'lets us update an attribute on the server': function(topic) {
+			var called = false;
+			test_server.assert
 		}
 	}
 }).run();

@@ -30,7 +30,7 @@ var urls = (function() {
 			end_point: 'url',
 			get: _get_url,
 		},
-		award_group: {
+		awardGroup: {
 			end_point: 'named_award_collection',
 			get: _get_url
 		},
@@ -39,14 +39,14 @@ var urls = (function() {
 			get: function(obj) {
 				var _get = _.bind(_get_url, this);
 				if ( obj && obj.group && obj.group.id ) { 
-					return that.award_group.get(obj.group) +
+					return that.awardGroup.get(obj.group) +
 					'/' + _get(obj);
 				} else {
 					return _get(obj);
 				}
 			}
 		},
-		good_group: {
+		goodGroup: {
 			end_point: 'named_good_collection',
 			get: _get_url
 		},
@@ -55,14 +55,14 @@ var urls = (function() {
 			get: function(obj) {
 				var _get = _.bind(_get_url, this);
 				if ( obj && obj.group && obj.group.id ) {
-					return that.good_group.get(obj.group) + 
+					return that.goodGroup.get(obj.group) + 
 					'/' + _get(obj);
 				} else {
 					return _get(obj);
 				}
 			}
 		},
-		level_group: {
+		levelGroup: {
 			end_point: 'named_level_collection',
 			get: _get_url
 		},
@@ -71,14 +71,14 @@ var urls = (function() {
 			get: function(obj) {
 				var _get = _.bind(_get_url, this);
 				if ( obj && obj.group && obj.group.id ) {
-					return that.level_group.get(obj.group) + 
+					return that.levelGroup.get(obj.group) + 
 					'/' + _get(obj);
 				} else {
 					return _get(obj);
 				}
 			}
 		},
-		end_user: {
+		user: {
 			end_point: 'end_user',
 			get: _get_url
 		},

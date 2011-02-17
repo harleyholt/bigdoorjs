@@ -1,54 +1,33 @@
-/** JUST SKETCHING THIS OUT
+/** JUST SKETCHING THIS OUT -- SOME THINGS I'D LIKE TO DO WITH LIBRARY
  * eu = end_user('todd')
  *
- * t = transaction( 
- *     currency.cheque(20),
- *     transaction.give_ratio(currency2.purchase(-20, example_good), .8),
- *     currency3.cheque(40),
- * ).unsecure().save(); 
- * t.run();
+ *currency.get('XP', callback);
+ *currency.get('Mana', callback);
+ *good('Rock and Roll', 'http://www.example.com/image.jpg').save(callback);
+ *awardgroup = awardGroup('Elementary my dear Watson')
+ *award('Best in the Class').partOf(awardGroup);
+ *
+ *xp.give(20).to(eu, callback);
+ *good.give().to(eu, callback);
+ *award.give().to(eu, callback);
+ *
+ * // lower level
+ * transaction( 
+ *     currency.give(20),
+ *     currency2.take(-20).for(example_good),
+ *     currency3.give(40),
+ * ).unsecure().save(function(error, transaction) { transaction.run(eu) }); 
  **/
 
  
-var querystring = require('querystring'),
-	uuid = require('node-uuid'),
-	request = require('request'),
-	crypto = require('crypto'),
-	_ = require('underscore'),
+var _ = require('underscore'),
 	urls = require('./urls'),
-	bigdoor_server = require('./servers').bigdoor_server;
+	secure_server = require('./servers').secure_server,
+	api_server = require('./servers').api_server,
+	get_http_methods = require('./servers').get_http_methods;
 
-var signature = function(secret, url, query, body) {
-	query = query || {};
-	body = body || {}
 
-	var stringize = function(obj) {
-		var temp = _.reduce(
-			_.sortBy(_.keys(obj), function(x) { return x; }),
-			function(memo, v) {
-				return memo + (v + obj[v].toString());
-			},
-			''
-		);
-		return temp;
-	}
-
-	var key = url + stringize(query) + stringize(body) + secret;
-	var hash = crypto.createHash('sha256');
-	hash.update(key);
-	return hash.digest(encoding='hex');
-}
-
-var token = function() {
-	return uuid().replace(/-/g, '').toLowerCase();
-}
-
-var time = function() {
-	return Date.now() / 1000;
-}
-
-var publisher = function(app_id, app_secret) {
-
+var publisher = function(app_id, app_secret, server) {
 
 	var urlCollection = function(urls) {
 		return urls;
@@ -71,68 +50,14 @@ var publisher = function(app_id, app_secret) {
 		return subtransactions;
 	}
 
-	// return a signed URL given a url, query, and body
-	var secure_url = function(url, query, body) {
-			var sign = signature(app_secret, url, query, body);
-			query['sig'] = sign;
-			var qs = querystring.stringify(query || {});
-			if ( qs.length ) {
-				url = url+'?'+qs;
-			}
-			return url;
+	if (!server) {
+		// default to the API server using secure requests
+		server = api_server(secure_server(null, app_secret), app_id);
 	}
-
-	// adds all necessary processing to a basic request in order to 
-	// meet the security requirements of secure requests and then
-	// actually preforms the request
-	var secure_server = {
-		complete_url: function(url) {
-			if (!url.match(/^\//)) {
-				url = '/'+url;
-			}
-			return 'http://local.publisher.bigdoor.com' + url;
-		},
-		action: function(method, url, query, body, callback) {
-			var t = time();
-			query = query || {};
-			query['time'] = t;
-			body = body || {};
-			body['token'] = token();
-			body['time'] = t;
-
-			url = secure_url(url, query, body);
-			request(
-				{
-					method: method,
-					url: this.complete_url(url),
-					body: querystring.stringify(body)
-				},
-				callback
-			);
-		},
-		get: function(url, query, callback) {
-			query = query || {};
-			query['time'] = time();
-
-			url = secure_url(url, query);
-			request(
-				{
-					method: 'GET',
-					url: this.complete_url(url)
-				},
-				callback
-			);
-		},
-		put: function(url, query, body, callback) {
-			this.action('PUT', url, query, body, callback);
-		},
-		post: function(url, query, body, callback) {
-			this.action('POST', url, query, body, callback);
-		},
-		delete: function(url, query, body, callback) {
-			this.action('DELETE', url, query, body, callback);
-		}
-	}
+	// object server takes the raw server and instead allows pub objects
+	// to be used as arguments with url, query, and body arguments being
+	// infered from this
+	var object_server = get_http_methods(server);
 
 	// returns the default content of any request made
 	var loyalty_content = function(obj, resource_name, body) {
@@ -146,20 +71,63 @@ var publisher = function(app_id, app_secret) {
 		}
 	}
 
-	// server allows raw access to get, put, post, delete
-	// with url, query, and body parameters
-	var server = bigdoor_server(secure_server, app_id);
-	// object server takes the raw server and instead allows pub objects
-	// to be used as arguments with url, query, and body arguments being
-	// infered from this
-	var object_server = server.get_http_methods();
-
 	var create_or_update = function(callback) {
 		if ( this.id ) {
 			object_server.put(this, callback);
 		} else {
-			object_server.post(this, callback);
+			object_server.post(this, _.bind(function(error, obj) {
+				obj = JSON.parse(obj);
+				obj = obj[0];
+				this.id = obj.id; // update the object with its id
+									//TODO update any changed fields
+				callback(error, this);
+			}, this));
 		}
+	}
+
+	var create_or_update_group_member = function(group, callback) {
+		if ( group && group.id ) { // group exists so we can just save this
+			create_or_update.call(this, callback);
+		} else {
+			// can't actually save at this point so instead mark the
+			// group member as ready to be saved and return it through
+			// the callback
+			this.save_ready = true;
+			callback(null, this);
+		}
+	}
+
+	var create_or_update_group = function(group_members, callback) { 
+		var toSave = _.select(
+			group_members,
+			function(x) { return x.save_ready; }
+		);
+		create_or_update.call(
+			this,
+			_.bind(function(error, group) {
+
+				// recursively save the goods that are
+				// part of this group
+				var recurse_save = function(error, member) {
+					var saving = toSave.pop();
+					if ( saving ) {
+						create_or_update_group_member.call(
+							saving,
+							group,
+							arguments.callee
+						);
+					} else { 
+						callback(error, group);
+					}
+				}
+				// update all group members to reference group
+				_.map(
+					group_members,
+					_.bind(function(x) { x.group = this }, this)
+				);
+				recurse_save.call(null, null);
+			}, this)
+		);
 	}
 
 	// the pub object is returned
@@ -235,7 +203,11 @@ var publisher = function(app_id, app_secret) {
 					);
 				},
 				save: function(callback) { 
-					create_or_update.call(this, callback);
+					create_or_update_group_member.call(
+						this,
+						this.transaction,
+						callback
+					);
 				},
 				currency: obj.currency,
 				default_amount: obj.default_amount || 1.00,
@@ -281,7 +253,11 @@ var publisher = function(app_id, app_secret) {
 					);
 				},
 				save: function(callback) { 
-					create_or_update.call(this, callback);
+					create_or_update_group.call(
+						this,
+						this.subtransactions,
+						callback
+					);
 				},
 				end_user_cap: obj.end_user_cap || -1,
 				end_user_cap_interval: obj.end_user_cap_interval || -1,
@@ -413,6 +389,9 @@ var publisher = function(app_id, app_secret) {
 			});
 		},
 		levelGroup: function(obj, levels) {
+			if ( !_.isArray(levels) ) {
+				levels = _.rest(_.toArray(arguments));
+			}
 			return _.extend(this.loyalty(obj), {
 				request_content: function() {
 					return loyalty_content(
@@ -453,6 +432,9 @@ var publisher = function(app_id, app_secret) {
 			});
 		},
 		awardGroup: function(obj, awards) {
+			if ( !_.isArray(awards) ) {
+				awards = _.rest(_.toArray(arguments));
+			}
 			var private = {
 				non_secure: obj.non_secure || false
 			}
@@ -462,13 +444,12 @@ var publisher = function(app_id, app_secret) {
 						this,
 						'awardGroup',
 						{
-							named_award_collection_id: this.group.id || this.group,
 							non_secure: private.non_secure
 						}
 					);
 				},
 				save: function(callback) { 
-					create_or_update.call(this, callback);
+					create_or_update_group.call(this, this.awards, callback);
 				},
 				awards: awardCollection(awards),
 				unsecure: function() {
@@ -484,21 +465,33 @@ var publisher = function(app_id, app_secret) {
 						this,
 						'award',
 						{
-							named_award_collection_id: this.group.id || this.group,
 							relative_weight: 1
 						}
 					);
 				},
-				save: function(callback) { 
-					create_or_update.call(this, callback);
+				save: function(callback) {
+					create_or_update_group_member.call(
+						this,
+						this.group,
+						callback
+					);
 				},
 				grant: function() {
 					// give to a user
+					// TODO this needs to return an object with a to method
+					// which executes the server side code to give to the
+					// provided user
+					return {
+						to: function() { } 
+					}
 				},
-				group: obj.group, // the award group this belongs to
+				group: obj.group // the award group this belongs to
 			});
 		},
 		goodGroup: function(obj, goods) {
+			if ( !_.isArray(goods) ) {
+				goods = _.rest(_.toArray(arguments));
+			}
 			return _.extend(this.loyalty(obj), {
 				request_content: function() {
 					return loyalty_content(
@@ -508,7 +501,7 @@ var publisher = function(app_id, app_secret) {
 					);
 				},
 				save: function(callback) { 
-					create_or_update.call(this, callback);
+					create_or_update_group.call(this, this.goods, callback);
 				},
 				goods: goodCollection(goods)
 			});
@@ -526,10 +519,14 @@ var publisher = function(app_id, app_secret) {
 					);
 				},
 				save: function(callback) { 
-					create_or_update.call(this, callback);
+					create_or_update_group_member.call(
+						this,
+						this.group,
+						callback
+					);
 				},
 				// add a good 
-				group: null,
+				group: obj.group,
 				give: function(subtransaction) {
 					// add a good to a subtransaction that is given
 					// when the transaction is executed
@@ -546,6 +543,9 @@ var publisher = function(app_id, app_secret) {
 	for ( var resource in pub ) {
 		pub[resource] = _.bind(pub[resource], pub);
 	}
+
+	// everything that follows is to create methods on the resource functions
+	// this is like a class method in an object oriented world
 
 	// create the conversion function; each function translated the raw server
 	// JSON returns to bigdoorjs representation.
@@ -718,7 +718,5 @@ var publisher = function(app_id, app_secret) {
 }
 
 module.exports.publisher = publisher;
-module.exports.signature = signature;
-module.exports.token = token;
-module.exports.time = time;
+
 
