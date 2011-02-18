@@ -24,7 +24,8 @@ var _ = require('underscore'),
 	urls = require('./urls'),
 	secure_server = require('./servers').secure_server,
 	api_server = require('./servers').api_server,
-	get_http_methods = require('./servers').get_http_methods;
+	get_http_methods = require('./servers').get_http_methods,
+	guid = require('./servers').guid;
 
 
 var publisher = function(app_id, app_secret, server) {
@@ -71,6 +72,36 @@ var publisher = function(app_id, app_secret, server) {
 		}
 	}
 
+	// resource objects which exist in the BigDoor API but which are not 
+	// supposed to be exposed outside of this module
+	var private_models = {
+		transaction_to_subtransaction: function(transaction, subtransaction) {
+			return {
+				request_content: function() {
+					var temp = {
+						url: '/named_transaction_group/'+
+								this.transaction.id +
+								'/named_transaction/' +
+								this.subtransaction.id,
+						query: {},
+						body: {
+							named_transaction_is_primary: this.subtransaction.is_primary || false
+						}
+					}
+
+					if ( typeof this.subtransaction.group_ratio == 'number' ) {
+						temp.body['named_transaction_group_ratio'] = this.subtransaction.group_ratio;
+					}
+					return temp;
+				},
+				transaction: transaction,
+				subtransaction: subtransaction
+			}
+		}
+	}
+
+	// create a resource if it doesn't exist on the server or
+	// update it if it does
 	var create_or_update = function(callback) {
 		if ( this.id ) {
 			object_server.put(this, callback);
@@ -85,6 +116,8 @@ var publisher = function(app_id, app_secret, server) {
 		}
 	}
 
+	// saves a group member if the group exists otherwise marks it
+	// as ready for saved (will be saved once group is saved)
 	var create_or_update_group_member = function(group, callback) {
 		if ( group && group.id ) { // group exists so we can just save this
 			create_or_update.call(this, callback);
@@ -97,7 +130,9 @@ var publisher = function(app_id, app_secret, server) {
 		}
 	}
 
-	var create_or_update_group = function(group_members, callback) { 
+	// save group objects and then saves any of the members
+	// which are ready to be saved
+	var create_or_update_group = function(save_member_fun, group_members, callback) { 
 		var toSave = _.select(
 			group_members,
 			function(x) { return x.save_ready; }
@@ -111,7 +146,7 @@ var publisher = function(app_id, app_secret, server) {
 				var recurse_save = function(error, member) {
 					var saving = toSave.pop();
 					if ( saving ) {
-						create_or_update_group_member.call(
+						save_member_fun.call(
 							saving,
 							group,
 							arguments.callee
@@ -129,6 +164,40 @@ var publisher = function(app_id, app_secret, server) {
 			}, this)
 		);
 	}
+
+	// saves subtransactions 
+	var create_or_update_subtransaction = function(transaction, callback) {
+		if ( this.id ) {
+			create_or_update.call(this, callback);
+		} else {
+			if ( transaction && transaction.id ) {
+				// we have a group that is saved in the database
+				object_server.post(this, _.bind(function(error, obj) {
+					obj = JSON.parse(obj);
+					obj = obj[0];
+					this.id = obj.id;
+					// transaction and subtransaction are saved
+					// need to link the two and then return the 
+					// subtransaction through the callback
+					object_server.post(
+						private_models.transaction_to_subtransaction(
+							transaction,
+							this
+						),
+						_.bind(function(error, linked) { 
+							callback(error, obj)
+						}, this)
+					);
+				}, this));
+			} else {
+				// we do not have a group that is saved so set save ready and
+				// return
+				this.save_ready = true;
+				callback(null, this);
+			}
+		}
+	}
+
 
 	// the pub object is returned
 	// the purpose of the resource objects contained with in is to define
@@ -171,12 +240,14 @@ var publisher = function(app_id, app_secret, server) {
 				created: obj.created,
 				modified: obj.modified,
 				loyalty_body_content: function() {
-					return {
-						pub_title: this.title,
-						pub_description: this.description,
-						end_user_title: this.title,
-						end_user_description: this.description
+					var results = {};
+					if ( this.title ) {
+						results.end_user_title = this.title;
 					}
+					if ( this.description ) {
+						results.end_user_description = this.description;
+					}
+					return results;
 				}
 			}
 		},
@@ -198,12 +269,12 @@ var publisher = function(app_id, app_secret, server) {
 							currency_id: this.currency.id || this.currency,
 							default_amount: this.default_amount,
 							is_source: this.is_source,
-							variable_amount_allowed: this.variable_amount_allowed
+							variable_amount_allowed: this.variable_amount_allowed || false
 						}, extras)
 					);
 				},
 				save: function(callback) { 
-					create_or_update_group_member.call(
+					create_or_update_subtransaction.call(
 						this,
 						this.transaction,
 						callback
@@ -230,14 +301,23 @@ var publisher = function(app_id, app_secret, server) {
 		// run against an end_user. These commands include debiting a user's 
 		// currency, granting more currency to a user, and giving the
 		// user a good
-		transaction: function(obj, primarySubtransaction) {
+		transaction: function(obj, primarySubtransaction, subtransactions) {
 			var private = {
 				non_secure: obj.non_secure || false,
 				primary_subtransaction: primarySubtransaction
 			};
-			var subtransactions = [primarySubtransaction]
+			primarySubtransaction.is_primary = true;
+			var all_subtransactions = [primarySubtransaction]
 			if ( arguments.length > 2 ) {
-				this.subtransactions.concat(_.rest(_.toArray(arguments),2));
+				if ( _.isArray(subtransactions) ) {
+					all_subtransactions = all_subtransactions.concat(
+						subtransactions
+					);
+				} else {
+					all_subtransactions = all_subtransactions.concat(
+						_.rest(_.toArray(arguments),2)
+					);
+				}
 			}
 			return _.extend(this.loyalty(obj), {
 				request_content: function() {
@@ -255,13 +335,14 @@ var publisher = function(app_id, app_secret, server) {
 				save: function(callback) { 
 					create_or_update_group.call(
 						this,
+						create_or_update_subtransaction,
 						this.subtransactions,
 						callback
 					);
 				},
 				end_user_cap: obj.end_user_cap || -1,
 				end_user_cap_interval: obj.end_user_cap_interval || -1,
-				subtransactions: subtransactionCollection(subtransactions),
+				subtransactions: subtransactionCollection(all_subtransactions),
 				unsecure: function() {
 					private.non_secure = true;
 					return this;
@@ -342,6 +423,7 @@ var publisher = function(app_id, app_secret, server) {
 			});
 		},
 		currency: function(obj) {
+			var parent = this;
 			return _.extend(this.loyalty(obj), {
 				request_content: function() {
 					return loyalty_content(
@@ -359,10 +441,10 @@ var publisher = function(app_id, app_secret, server) {
 				},
 				exchange_rate: obj.exchange_rate || 1, // points to dollars
 				type: obj.type || 5, // default: non-redeemable XP 
-				check: function(amount) {
+				cheque: function(amount) {
 					// get a transaction that represents giving the
 					// user some currency
-					return this.subtransaction({
+					return parent.subtransaction({
 						currency: this,
 						default_amount: amount,
 						is_source: true
@@ -371,7 +453,7 @@ var publisher = function(app_id, app_secret, server) {
 				debit: function(amount) {
 					// get a tranasction that debits the
 					// user some currency
-					return this.subtransaction({
+					return parent.subtransaction({
 						currency: this,
 						default_amount: amount,
 						is_source: false
@@ -403,7 +485,12 @@ var publisher = function(app_id, app_secret, server) {
 					);
 				},
 				save: function(callback) { 
-					create_or_update.call(this, callback);
+					create_or_update_group.call(
+						this,
+						create_or_update_group_member,
+						this.levels,
+						callback
+					);
 				},
 				currency: obj.currency,
 				levels: levelCollection(levels)
@@ -416,13 +503,16 @@ var publisher = function(app_id, app_secret, server) {
 						this,
 						'level',
 						{
-							named_level_collection_id: this.group.id || this.group,
 							threshold: this.theshold
 						}
 					);
 				},
 				save: function(callback) { 
-					create_or_update.call(this, callback);
+					create_or_update_group_member.call(
+						this,
+						this.group,
+						callback
+					);
 				},
 				threshold: obj.threshold,
 				currency: function() {
@@ -449,7 +539,12 @@ var publisher = function(app_id, app_secret, server) {
 					);
 				},
 				save: function(callback) { 
-					create_or_update_group.call(this, this.awards, callback);
+					create_or_update_group.call(
+						this,
+						create_or_update_group_member,
+						this.awards,
+						callback
+					);
 				},
 				awards: awardCollection(awards),
 				unsecure: function() {
@@ -501,7 +596,12 @@ var publisher = function(app_id, app_secret, server) {
 					);
 				},
 				save: function(callback) { 
-					create_or_update_group.call(this, this.goods, callback);
+					create_or_update_group.call(
+						this,
+						create_or_update_group_member,
+						this.goods,
+						callback
+					);
 				},
 				goods: goodCollection(goods)
 			});
@@ -513,7 +613,6 @@ var publisher = function(app_id, app_secret, server) {
 						this,
 						'good',
 						{
-							named_good_collection_id: this.group.id || this.group,
 							relative_weight: 1
 						}
 					);

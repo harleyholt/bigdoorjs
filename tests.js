@@ -10,6 +10,32 @@ var signature = servers.signature;
 var api_server = servers.api_server;
 var get_http_methods = servers.get_http_methods;
 
+vows.describe('Currency Resource Object').addBatch({
+	'the results of currency.cheque': {
+		topic: function() {
+			return pub.currency.fromJSON(testData.currency).cheque(20);
+		},
+		'has': {
+			'all the properties of a subtransaction': function(topic){
+				assert.isFunction(topic.save);
+				assert.isFunction(topic.request_content);
+			}, 
+			'a default amount of': function(topic){
+				assert.equal(topic.default_amount, 20);
+			},
+			'the is_source variable set to true': function(topic){
+				assert.isTrue(topic.is_source);
+			},
+			'the currency used to create it': function(topic){
+				assert.equal(topic.currency.id, testData.currency.id);
+			},
+			'the instant transaction property: to': function(topic){
+				assert.isFunction(topic.to);
+			}
+		}
+	}
+}).run()
+
 // pulled from example at http://publisher.bigdoor.com/docs/signature
 vows.describe('Secure Request Signing').addBatch({
 	'the signature of the post request': {
@@ -461,3 +487,5 @@ vows.describe('Converting From JSON').addBatch({
 		}
 	}
 }).run();
+
+

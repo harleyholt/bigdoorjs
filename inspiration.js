@@ -24,9 +24,17 @@ var pub = publisher('d6e92052c79b4f329c1f79c3a87ce604', 'b0435cee6f3d413c9775457
 //	console.log(attr);
 //});
 
-//pub.currency.get('XP', function(error, xp) {
-//	console.log(xp);
-//});
+pub.currency.get('XP', function(error, xp) {
+	xp.cheque(20).save(function (error, xp_cheque) {
+		//console.log(xp_cheque);
+		pub.transaction({
+			title: 'Testing this',
+			description: 'ya'
+		}, xp_cheque).save(function(error, transact) {
+			//console.log(error, transact);
+		});
+	});
+});
 
 /**
 var award1 = pub.award({
@@ -44,7 +52,6 @@ var award3 = pub.award({
 	description: 'for serious'
 });
 
-
 pub.awardGroup({
 	title: 'Noob awards',
 	description: 'For those about to rock',
@@ -55,7 +62,6 @@ pub.awardGroup({
 		console.log(obj);
 	});
 });
-
 var good1 = pub.good({
 	title: 'Sword of Truth',
 	description: 'and other fantasy references'

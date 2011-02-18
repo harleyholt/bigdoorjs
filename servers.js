@@ -33,6 +33,10 @@ var token = function() {
 	return uuid().replace(/-/g, '').toLowerCase();
 }
 
+var guid = function() {
+	return uuid().toLowerCase();
+}
+
 var time = function() {
 	return Date.now() / 1000;
 }
@@ -50,6 +54,7 @@ var secure_url = function(app_secret, url, query, body) {
 
 module.exports.signature = signature;
 module.exports.token = token;
+module.exports.guid = guid;
 module.exports.time = time;
 
 // adds all necessary processing to a basic request in order to 
@@ -66,7 +71,6 @@ module.exports.secure_server = function(server, app_secret) {
 			return 'http://local.publisher.bigdoor.com' + url;
 		},
 		action: function(method, url, query, body, callback) {
-			console.log(url);
 			var t = time();
 			query = query || {};
 			query['time'] = t;

@@ -1,3 +1,4 @@
+* Create a server wrapping the current one which changes BDM response codes to errors
 * Test creating/updating all the resources
 * Test retrieving resources through resource objects get function
 * Instant transactions for award, currency, goods:
