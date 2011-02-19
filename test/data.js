@@ -8,7 +8,7 @@ var data = {
 		"friendly_id": "badge-o-matic", 
 		"attributes": [], 
 		"created_timestamp": 1297290464, 
-		"pub_description": "Used by the Badge-O-Matic tool to indicate objects created by the tool", 
+		"pub_description": JSON.stringify({}), 
 		"end_user_title": "Badge-O-Matic", 
 		"id": 19895
 	},
@@ -21,7 +21,7 @@ var data = {
 		"is_media_url": 1, 
 		"is_for_end_user_ui": 1, 
 		"created_timestamp": 1297290464, 
-		"pub_description": "You are a total Newbie.", 
+		"pub_description": JSON.stringify({}), 
 		"end_user_title": "Newbie", 
 		"attributes": [
 			{
@@ -33,7 +33,7 @@ var data = {
 				"friendly_id": "7a0670c7e0cb4bc280cc67276fce5754", 
 				"attributes": [], 
 				"created_timestamp": 1263941758, 
-				"pub_description": "Attribute used to associate preview related URLs", 
+				"pub_description": JSON.stringify({}),
 				"end_user_title": null, 
 				"id": 13
 			}
@@ -52,7 +52,7 @@ var data = {
 		"resource_name": "currency", 
 		"urls": [], 
 		"created_timestamp": 1293730658, 
-		"pub_description": "Earn points by interacting with this site", 
+		"pub_description": JSON.stringify({instant:117}), 
 		"end_user_title": "XP", 
 		"relative_weight": 1, 
 		"id": 8862, 
@@ -68,7 +68,7 @@ var data = {
 		"resource_name": "named_award", 
 		"urls": [], 
 		"created_timestamp": 1297497767, 
-		"pub_description": "this is only a test", 
+		"pub_description": JSON.stringify({instant:117}), 
 		"end_user_title": "this is only a test", 
 		"relative_weight": null, 
 		"id": 7293
@@ -89,7 +89,7 @@ var data = {
 				"resource_name": "named_award", 
 				"urls": [], 
 				"created_timestamp": 1297497767, 
-				"pub_description": "this is only a test", 
+				"pub_description": JSON.stringify({}),
 				"end_user_title": "this is only a test", 
 				"relative_weight": null, 
 				"id": 7293
@@ -99,7 +99,7 @@ var data = {
 		"resource_name": "named_award_collection", 
 		"urls": [], 
 		"created_timestamp": 1297497683, 
-		"pub_description": "this is a test", 
+		"pub_description": JSON.stringify({}),
 		"end_user_title": "testing", 
 		"id": 2705
 	},
@@ -121,7 +121,7 @@ var data = {
 				"is_media_url": 1, 
 				"is_for_end_user_ui": 1, 
 				"created_timestamp": 1293730659, 
-				"pub_description": "You are a total Newbie.", 
+				"pub_description": JSON.stringify({}),
 				"end_user_title": "Newbie", 
 				"attributes": [
 					{
@@ -133,7 +133,7 @@ var data = {
 						"friendly_id": "7a0670c7e0cb4bc280cc67276fce5754", 
 						"attributes": [], 
 						"created_timestamp": 1263941758, 
-						"pub_description": "Attribute used to associate preview related URLs", 
+						"pub_description": JSON.stringify({}),
 						"end_user_title": null, 
 						"id": 13
 					}
@@ -144,7 +144,7 @@ var data = {
 		], 
 		"attributes": [], 
 		"threshold": 10, 
-		"pub_description": "You are a total Newbie.", 
+		"pub_description": JSON.stringify({}),
 		"end_user_title": "Newbie", 
 		"named_level_collection_id": 5700, 
 		"id": 27236
@@ -166,7 +166,7 @@ var data = {
 				"urls": [], 
 				"attributes": [], 
 				"threshold": 10, 
-				"pub_description": "You are a total Newbie.", 
+				"pub_description": JSON.stringify({}),
 				"end_user_title": "Newbie", 
 				"named_level_collection_id": 5700, 
 				"id": 27236
@@ -182,7 +182,7 @@ var data = {
 				"urls": [], 
 				"attributes": [], 
 				"threshold": 750, 
-				"pub_description": "You are a site Pro", 
+				"pub_description": JSON.stringify({}),
 				"end_user_title": "Pro", 
 				"named_level_collection_id": 5700, 
 				"id": 27237
@@ -201,13 +201,13 @@ var data = {
 				"friendly_id": "studio-activity-search", 
 				"attributes": [], 
 				"created_timestamp": 1294884693, 
-				"pub_description": "Used by the Studio-O-Matic tool to associate a badge track with an activity", 
+				"pub_description": JSON.stringify({}),
 				"end_user_title": "Studio-O-Matic (search)", 
 				"id": 16859
 			}
 		], 
 		"created_timestamp": 1296685218, 
-		"pub_description": "Earn points by searching.", 
+		"pub_description": JSON.stringify({}),
 		"end_user_title": "Search", 
 		"id": 5700
 	},
@@ -222,7 +222,7 @@ var data = {
 		"urls": [], 
 		"attributes": [], 
 		"created_timestamp": 1296413898, 
-		"pub_description": "fdsafdsa", 
+		"pub_description": JSON.stringify({instant:112}),
 		"end_user_title": "fdsafadsf", 
 		"relative_weight": 1, 
 		"id": 6268
@@ -236,7 +236,7 @@ var data = {
 		"urls": [], 
 		"attributes": [], 
 		"created_timestamp": 1296413890, 
-		"pub_description": "sfadfd", 
+		"pub_description": JSON.stringify({}),
 		"end_user_title": "dfsafasdf", 
 		"id": 2011, 
 		"named_goods": [
@@ -251,7 +251,7 @@ var data = {
 				"urls": [], 
 				"attributes": [], 
 				"created_timestamp": 1296413898, 
-				"pub_description": "fdsafdsa", 
+				"pub_description": JSON.stringify({}),
 				"end_user_title": "fdsafadsf", 
 				"relative_weight": 1, 
 				"id": 6268
@@ -305,7 +305,7 @@ var data = {
 						"friendly_id": "badge-o-matic", 
 						"attributes": [], 
 						"created_timestamp": 1297290464, 
-						"pub_description": "Used by the Badge-O-Matic tool to indicate objects created by the tool", 
+						"pub_description": JSON.stringify({}),
 						"end_user_title": "Badge-O-Matic", 
 						"id": 19895
 					}, 
@@ -318,13 +318,13 @@ var data = {
 						"friendly_id": "badge_o_matic_7334", 
 						"attributes": [], 
 						"created_timestamp": 1297290465, 
-						"pub_description": "Used by the Badge-O-Matic tool to associate a badge track with a transaction", 
+						"pub_description": JSON.stringify({}),
 						"end_user_title": "Badge-O-Matic (7334)", 
 						"id": 19896
 					}
 				], 
 				"created_timestamp": 1297290466, 
-				"pub_description": "Earn points by interacting with this site", 
+				"pub_description": JSON.stringify({}),
 				"end_user_title": "XP", 
 				"currency": {
 					"end_user_description": "Earn points by interacting with this site", 
@@ -337,7 +337,7 @@ var data = {
 					"resource_name": "currency", 
 					"urls": [], 
 					"created_timestamp": 1297290464, 
-					"pub_description": "Earn points by interacting with this site", 
+					"pub_description": JSON.stringify({}),
 					"end_user_title": "XP", 
 					"relative_weight": 1, 
 					"id": 10958, 
@@ -352,7 +352,7 @@ var data = {
 		"non_secure": 1, 
 		"urls": [], 
 		"created_timestamp": 1297290466, 
-		"pub_description": "Earn points by interacting with this site", 
+		"pub_description": JSON.stringify({}),
 		"end_user_title": "XP", 
 		"id": 612144, 
 		"resource_name": "named_transaction_group"
@@ -384,7 +384,7 @@ var data = {
 						"is_media_url": 1, 
 						"is_for_end_user_ui": 1, 
 						"created_timestamp": 1293730663, 
-						"pub_description": "Unlocked on first check in", 
+						"pub_description": JSON.stringify({}),
 						"end_user_title": "Just Arrived", 
 						"attributes": [
 							{
@@ -396,7 +396,7 @@ var data = {
 								"friendly_id": "7a0670c7e0cb4bc280cc67276fce5754", 
 								"attributes": [], 
 								"created_timestamp": 1263941758, 
-								"pub_description": "Attribute used to associate preview related URLs", 
+								"pub_description": JSON.stringify({}),
 								"end_user_title": null, 
 								"id": 13
 							}
@@ -406,7 +406,7 @@ var data = {
 					}
 				], 
 				"threshold": 1, 
-				"pub_description": "Unlocked on first check in", 
+				"pub_description": JSON.stringify({}),
 				"end_user_title": "Just Arrived"
 			}
 		], 
@@ -425,7 +425,7 @@ var data = {
 				"previous_balance": "0.00", 
 				"currency_adjusted": false, 
 				"created_timestamp": 1294886819, 
-				"pub_description": "Earn points by interacting with this site", 
+				"pub_description": JSON.stringify({}),
 				"end_user_title": "XP"
 			}, 
 			{
@@ -440,7 +440,7 @@ var data = {
 				"previous_balance": "0.00", 
 				"currency_adjusted": false, 
 				"created_timestamp": 1294886819, 
-				"pub_description": "Earn points by checking in.", 
+				"pub_description": JSON.stringify({}),
 				"end_user_title": "Check In"
 			}
 		], 

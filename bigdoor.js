@@ -97,8 +97,32 @@ var publisher = function(app_id, app_secret, server) {
 				transaction: transaction,
 				subtransaction: subtransaction
 			}
+		},
+		transaction_execute: function(transaction, user, amount) {
+			return {
+				request_content: function() {
+					var temp = {
+						url: '/named_transaction_group/' +
+							this.transaction.id +
+							'/execute/' +
+							user.login,
+						query: {},
+						body: {
+							allow_negative_balance: false, // TODO: should come from somewhere
+							verbosity: 4
+						}
+					}
+
+					if ( amount ) {
+						temp.body.amount = amount;
+					}
+
+					return temp;
+				}
+			}
 		}
 	}
+
 
 	// create a resource if it doesn't exist on the server or
 	// update it if it does
@@ -113,6 +137,51 @@ var publisher = function(app_id, app_secret, server) {
 									//TODO update any changed fields
 				callback(error, this);
 			}, this));
+		}
+	}
+
+	// creates an object and also an associated transaction
+	// which can be used for instant granting
+	// for example a currency is given a default transaction 
+	// which can be used to grant that currency
+	create_with_transaction = function(callback) {
+		object_server.post(
+			this,
+			_.bind(function(error, cur) { 
+				// currency is created
+				cur = JSON.parse(cur);
+				cur = cur[0];
+				this.id = cur.id;
+				cur = this;
+				var subtrans = cur.cheque().variable_amount();
+				subtrans.save(function(error, subtrans) {
+					console.log(subtrans);
+					pub.transaction(
+						{
+							title: 'grant ' + cur.title,
+							description: 'created automatically to grant ' + cur.title,
+						},
+						subtrans
+					).save(function(error, trans) {
+						// transaction is created--grab the ID and stuff it into
+						// the currency
+						cur.meta = cur.meta || {};
+						cur.meta['instant'] = trans.id;
+						cur.save(function(error, obj) {
+							console.log(obj);
+							callback(error, cur);
+						}, this);
+					}, this);
+				});
+			}, this)
+		);
+	}
+
+	create_or_update_with_transaction = function(callback) {
+		if ( this.id ) {
+			create_or_update.call(this, callback);
+		} else {
+			create_with_transaction.call(this, callback);
 		}
 	}
 
@@ -237,15 +306,20 @@ var publisher = function(app_id, app_secret, server) {
 				id: obj.id, // may be undefined (this is fine and desired)
 				title: obj.title,
 				description: obj.description,
+				meta: obj.meta,
 				created: obj.created,
 				modified: obj.modified,
 				loyalty_body_content: function() {
 					var results = {};
 					if ( this.title ) {
 						results.end_user_title = this.title;
+						results.pub_title = this.title;
 					}
 					if ( this.description ) {
 						results.end_user_description = this.description;
+					}
+					if ( this.meta && !_.isEmpty(this.meta)) {
+						results.pub_description = JSON.stringify(this.meta);
 					}
 					return results;
 				}
@@ -287,10 +361,12 @@ var publisher = function(app_id, app_secret, server) {
 				variable_amount: function(percent) {
 					this.group_ratio = percent;
 					this.variable_amount_allowed = true;
+					return this;
 				},
 				constant_amount: function() {
 					delete this.group_ratio;
 					this.variable_amount_allowed = false;
+					return this;
 				},
 				has_variable_amount: function() {
 					return this.variable_amount_allowed;
@@ -337,6 +413,12 @@ var publisher = function(app_id, app_secret, server) {
 						this,
 						create_or_update_subtransaction,
 						this.subtransactions,
+						callback
+					);
+				},
+				execute: function(user, callback) {
+					obj_server.post(
+						private_models.transaction_execute(this, user),
 						callback
 					);
 				},
@@ -432,30 +514,33 @@ var publisher = function(app_id, app_secret, server) {
 						{
 							currency_type_id: this.type,
 							exchange_rate: this.exchange_rate,
-							relative_weight: 1
+							relative_weight: 1 
 						}
 					);
 				},
 				save: function(callback) { 
-					create_or_update.call(this, callback);
+					create_or_update_with_transaction.call(this, callback);
 				},
 				exchange_rate: obj.exchange_rate || 1, // points to dollars
 				type: obj.type || 5, // default: non-redeemable XP 
 				cheque: function(amount) {
 					// get a transaction that represents giving the
 					// user some currency
-					return parent.subtransaction({
+					var instant = parent.subtransaction({
 						currency: this,
 						default_amount: amount,
 						is_source: true
 					});
+
+					instant.to = function(user, callback) {
+					}
 				},
 				debit: function(amount) {
 					// get a tranasction that debits the
 					// user some currency
 					return parent.subtransaction({
 						currency: this,
-						default_amount: amount,
+						default_amount: amount || 1,
 						is_source: false
 					});
 				},
@@ -653,10 +738,9 @@ var publisher = function(app_id, app_secret, server) {
 	var loyalty_conversion = function(jsonObj) {
 		return {
 			id: jsonObj.id,
-			title: jsonObj.end_user_title || jsonObj.pub_title,
-			description: (
-				jsonObj.end_user_description || jsonObj.pub_description
-			),
+			title: jsonObj.end_user_title,
+			description: jsonObj.end_user_description,
+			meta: jsonObj.pub_description ? JSON.parse(jsonObj.pub_description) : null,
 			modified: new Date(jsonObj.modified_timestamp*1000),
 			created: new Date(jsonObj.created_timestamp*1000)
 		}

@@ -4,14 +4,24 @@ var publisher = require('./bigdoor').publisher,
 // harley+test_bdm_rhh507@bigdoor.com
 var pub = publisher('d6e92052c79b4f329c1f79c3a87ce604', 'b0435cee6f3d413c97754574cddeb3f8');
 
-//pub.currency({
-//	title: 'Mana',
-//	description: 'Used for conjuring, spells, witchcraft, and mischief',
-//	exchange_rate: 10
-//}).save(function(error, cur) {
-//	console.log('new currency has ID: ' + cur.id);
-//	console.log(cur);
-//});
+/**
+pub.currency({
+	title: 'Mana',
+	description: 'Used for conjuring, spells, witchcraft, and mischief',
+	exchange_rate: 10
+}).save(function(error, cur) {
+	console.log('new currency has ID: ' + cur.id);
+	console.log(cur);
+});
+**/
+
+pub.currency({
+	title: 'Life Experience',
+	description: 'Earned by riding the trolley'
+}).save(function(error, cur) {
+	console.log(cur);
+});
+
 
 //BDM BUG: if you delete an attribute and then try to create a new 
 //attribute with the same friendly_id it will fail
@@ -24,6 +34,7 @@ var pub = publisher('d6e92052c79b4f329c1f79c3a87ce604', 'b0435cee6f3d413c9775457
 //	console.log(attr);
 //});
 
+/**
 pub.currency.get('XP', function(error, xp) {
 	xp.cheque(20).save(function (error, xp_cheque) {
 		//console.log(xp_cheque);
@@ -35,6 +46,7 @@ pub.currency.get('XP', function(error, xp) {
 		});
 	});
 });
+**/
 
 /**
 var award1 = pub.award({
