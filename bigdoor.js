@@ -538,8 +538,16 @@ var publisher = function(app_id, app_secret, server) {
 						is_source: true
 					});
 
+					var that = this;
 					instant.to = function(user, callback) {
+						if ( !that.meta.instant ) {
+							throw 'this currency can not be granted in this manner';
+						}
+						transaction = parent.transaction({
+							id: that.meta.instant,
+						}, instant).execute(user, amount, callback);
 					}
+					return instant;
 				},
 				debit: function(amount) {
 					// get a tranasction that debits the

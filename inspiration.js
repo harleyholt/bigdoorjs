@@ -12,10 +12,19 @@ var pub = publisher('d6e92052c79b4f329c1f79c3a87ce604', 'b0435cee6f3d413c9775457
 //});
 
 // retrieve a user, a trasaction, and run the transaction against the user
+//pub.user.get('starnostar', function(error, user) {
+//	console.log(user);
+//	pub.transaction.get('grant Life Experience', function(error, transaction) {
+//		transaction.execute(user, 10.00, function(error, result) {
+//			console.log(result);
+//		});
+//	});
+//});
+
+// retrieve a user and a currency and give that currency to the user
 pub.user.get('starnostar', function(error, user) {
-	console.log(user);
-	pub.transaction.get('grant Life Experience', function(error, transaction) {
-		transaction.execute(user, 10.00, function(error, result) {
+	pub.currency.get('Life Experience', function(error, currency) {
+		currency.cheque(20).to(user,function(error, result) {
 			console.log(result);
 		});
 	});
