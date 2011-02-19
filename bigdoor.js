@@ -118,7 +118,10 @@ var publisher = function(app_id, app_secret, server) {
 					}
 
 					return temp;
-				}
+				},
+				transaction: transaction,
+				user: user,
+				amount: amount
 			}
 		}
 	}
@@ -155,7 +158,6 @@ var publisher = function(app_id, app_secret, server) {
 				cur = this;
 				var subtrans = cur.cheque().variable_amount();
 				subtrans.save(function(error, subtrans) {
-					console.log(subtrans);
 					pub.transaction(
 						{
 							title: 'grant ' + cur.title,
@@ -168,7 +170,6 @@ var publisher = function(app_id, app_secret, server) {
 						cur.meta = cur.meta || {};
 						cur.meta['instant'] = trans.id;
 						cur.save(function(error, obj) {
-							console.log(obj);
 							callback(error, cur);
 						}, this);
 					}, this);
@@ -288,6 +289,7 @@ var publisher = function(app_id, app_secret, server) {
 					}
 				},
 				save: function(callback) { 
+					// updating users wont work right now--can only create
 					create_or_update.call(this, callback);
 				},
 				// obj can either be object or string (used as end_user_login)
@@ -417,7 +419,7 @@ var publisher = function(app_id, app_secret, server) {
 					);
 				},
 				execute: function(user, callback) {
-					obj_server.post(
+					object_server.post(
 						private_models.transaction_execute(this, user),
 						callback
 					);
@@ -948,6 +950,26 @@ var publisher = function(app_id, app_secret, server) {
 			getWith,
 			pub[resource],
 			funs
+		);
+	}
+
+	pub.user.get = function(identifier, callback) {
+		server.get(
+			urls.user.get({login:identifier}),
+			{},
+			_.bind(
+				function(error, response, body) {
+					if ( !error ) {
+						callback(
+							null, 
+							this.fromJSON(JSON.parse(body)[0])
+						);
+					} else {
+						callback(error, null);
+					}
+				},
+				this
+			)
 		);
 	}
 

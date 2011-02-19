@@ -1,3 +1,4 @@
+* Change the create_or_update functionality to use the created time so it unifies the user and other objects
 * Create a server wrapping the current one which changes BDM response codes to errors
 * Test creating/updating all the resources
 * Test retrieving resources through resource objects get function

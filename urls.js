@@ -80,7 +80,13 @@ var urls = (function() {
 		},
 		user: {
 			end_point: 'end_user',
-			get: _get_url
+			get: function(obj) {
+				if ( obj.login ) {
+					return this.end_point + '/' + obj.login;
+				} else {
+					return this.end_point + '/';
+				}
+			}
 		},
 		transaction: {
 			end_point: 'named_transaction_group',
