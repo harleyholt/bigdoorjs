@@ -418,9 +418,13 @@ var publisher = function(app_id, app_secret, server) {
 						callback
 					);
 				},
-				execute: function(user, callback) {
+				execute: function(user, amount, callback) {
+					if ( _.isFunction(amount) ) {
+						callback = amount;
+						amount = null;
+					}
 					object_server.post(
-						private_models.transaction_execute(this, user),
+						private_models.transaction_execute(this, user, amount),
 						callback
 					);
 				},

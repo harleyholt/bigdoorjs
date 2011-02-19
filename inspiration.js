@@ -15,7 +15,7 @@ var pub = publisher('d6e92052c79b4f329c1f79c3a87ce604', 'b0435cee6f3d413c9775457
 pub.user.get('starnostar', function(error, user) {
 	console.log(user);
 	pub.transaction.get('grant Life Experience', function(error, transaction) {
-		transaction.execute(user, function(error, result) {
+		transaction.execute(user, 10.00, function(error, result) {
 			console.log(result);
 		});
 	});
