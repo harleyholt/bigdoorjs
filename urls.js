@@ -1,12 +1,17 @@
 var _ = require('underscore');
 
-// an object which maps resource names to URLs
-// examples:
-// var a = attibute() // == 'attribute'
-// var url = urls.attribute.get({id:1}); // == 'attribute/1'
-// var l = level() // == 'level'
-// url = urls.level.get({id:42, group:{id:12}});
-//     // == 'named_level_collection/12/named_level/42'
+/**
+ * urls provides a mapping from the resource object names to the 
+ * corresponding BigDoor API endpoint.
+ *
+ * examples:
+ * var a = attibute()
+ * var url = urls.attribute.get();
+ * var url = urls.attribute.get({id:1}); // == 'attribute/1'
+ * var l = level() // == 'level'
+ * url = urls.level.get({id:42, group:{id:12}}); 
+ *     //== 'named_level_collection/12/named_level/42'
+ **/
 var urls = (function() {
 	var that = {};
 	var _get_url = function(obj) {
