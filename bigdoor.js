@@ -28,6 +28,14 @@ var _ = require('underscore'),
 	guid = require('./servers').guid;
 
 
+/**
+ * Publisher implements a simplified interface to the BigDoor system
+ * providing virtual currency, levels, and awards. 
+ *
+ * To use this, the client must have an account created at 
+ * publisher.bigdoor.com and use the provided app key and app secret key
+ * to create a new publisher.
+ **/
 var publisher = function(app_id, app_secret, server) {
 
 	var urlCollection = function(urls) {
