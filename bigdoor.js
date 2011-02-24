@@ -834,12 +834,16 @@ var publisher = function(app_id, app_secret, server) {
 	// the output includes the raw properties, the default properties from
 	// loyalty_conversion, and the specific conversions from the
 	// loyalty_conversions object
+	//
+	// TODO: the fromJSON method clones the argument but still allows for
+	// the possibility that nested objects can be modified thereby modifying
+	// argument object (what to do about this? is deep clone the answer?)
 	for ( var i in loyalty_conversions ) {
 		pub[i].fromJSON = function(x) {
 			return function(jsonObj) {
 				return pub[x](
 					_.extend(
-						jsonObj,
+						_.clone(jsonObj), 
 						loyalty_conversion(jsonObj),
 						loyalty_conversions[x](jsonObj)
 					)

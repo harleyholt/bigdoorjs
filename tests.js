@@ -62,7 +62,7 @@ vows.describe('Secure Request Signing').addBatch({
 	}
 }).run();
 
-var test_server = (function() {
+var test_server = function() {
 	var temp = {
 		asserts: { },
 		returns: { },
@@ -106,147 +106,140 @@ var test_server = (function() {
 			this.asserts[method] = asserts;
 		},
 		return_on: function(method, results) {
-			this.returns[method] = results;
+			this.returns[method] = {
+				error: results.error,
+				response: results.response,
+				content: results.content
+			}
 		}
 	}
 	//_.bindAll(temp, temp);
 	return temp;
-})();
+}
 
-var test_attribute = {
+// a resource object
+var test_resource_obj = {
 	id:10,
 	friendly_id: 'testing',
 	title: 'testing',
 	description: 'testing',
 	request_content: function() {
 		return {
-			url: 'attribute/10',
+			url: '/resource/'+this.id,
 			query: {},
 			body: {
 				friendly_id: this.friendly_id,
 				pub_title: this.title,
 				end_user_title: this.title,
-				pub_description: this.pub_description,
-				end_user_description: this.end_user_description
+				end_user_description: this.description
 			}
 		}
 	}
 } 
 
-vows.describe('Test the BigdoorServer').addBatch({
-	'the server for the test publisher': {
+var test_app_key = '522adae4d28b49999bb42e0a21a13889';
+
+vows.describe('Test the get_http_methods Helper').addBatch({
+	'the get_http_methods function': function() {
+		return get_http_methods
+	},
+	'returns the correct functions': function(topic) {
+		var test = topic(test_server(), 'get', 'put', 'post', 'delete');
+		assert.include(test, 'get');
+		assert.include(test, 'post');
+		assert.include(test, 'put');
+		assert.include(test, 'delete');
+		test = topic(test_server(), 'get');
+		assert.include(test, 'get');
+		assert.isUndefined(test['post']);
+		test = topic(test_server());
+		assert.include(test, 'get');
+		assert.include(test, 'post');
+		assert.include(test, 'put');
+		assert.include(test, 'delete');
+		test = topic(test_server(), ['get', 'post']);
+		assert.include(test, 'get');
+		assert.include(test, 'post');
+		assert.isUndefined(test['put']);
+	}
+});
+
+vows.describe('Test the Bigdoor API Server').addBatch({
+	'the api server returns an attribute through the callback': {
 		topic: function() {
-			return api_server(test_server, '522adae4d28b49999bb42e0a21a13889');
-		},
-		'makes the get request for an attribute': function(topic) {
-			var called = false;
-			test_server.assert_on('get', function(url, query, callback) {
+			var mock_server = test_server();
+			mock_server.assert_on('get', function(url, query, callback) {
 				assert.equal(
 					url,
-					'/api/publisher/' + 
-						'522adae4d28b49999bb42e0a21a13889/attribute'
+					'/api/publisher/' + test_app_key + '/attribute/' +
+						testData.attribute.id
 				);
 				assert.isObject(query);
 				assert.isEmpty(query);
-				called = true;
 			});
-			topic.get('attribute', {}, null);
-			assert.isTrue(called);
+			mock_server.return_on(
+				'get',
+				{
+					content: JSON.stringify([testData.attribute, {}])
+				}
+			);
+			var under_test = api_server(mock_server, test_app_key);
+			under_test.get('/attribute/'+testData.attribute.id, {}, this.callback);
 		},
-		'makes the post request for an attribute': function(topic) {
-			var called = false;
-			test_server.assert_on('post', function(url, query, body, callback) {
+		'which is an object': function(error, response, content){
+			assert.isArray(content);
+		},
+		'and has an array of length 2': function(error, response, content){
+			assert.isTrue(_.isArray(content));
+			assert.equal(content.length, 2);
+		},
+		'did not experience an error': function(error, response, content){
+			assert.isNull(error);
+		},
+		'and contains the correct data': function(error, response, content){
+			var attribute = content[0];
+			assert.deepEqual(attribute, testData.attribute);
+		}
+	}
+}).run();
+
+vows.describe('Test the Object Server methods').addBatch({
+	'the functions returned by get_http_method': {
+		topic: function() {
+			var mock_server = test_server();
+			mock_server.assert_on('post', function(url, query, body, callback) {
 				assert.equal(
 					url,
-					'/api/publisher/' + 
-					'522adae4d28b49999bb42e0a21a13889/attribute'
+					'/resource/10'
 				);
 				assert.isObject(query);
 				assert.isEmpty(query);
 				assert.isObject(body);
-				assert.equal(body['end_user_title'], 'testing');
-				called = true;
-			});
-			topic.post('attribute', {}, {'end_user_title': 'testing'}, null);
-			assert.isTrue(called);
-		},
-		'returns the correct methods': function(topic) {
-			var test = get_http_methods(topic, 'get', 'put', 'post', 'delete');
-			assert.include(test, 'get');
-			assert.include(test, 'post');
-			assert.include(test, 'put');
-			assert.include(test, 'delete');
-			test = get_http_methods(topic, 'get');
-			assert.include(test, 'get');
-			assert.isUndefined(test['post']);
-			test = get_http_methods(topic);
-			assert.include(test, 'get');
-			assert.include(test, 'post');
-			assert.include(test, 'put');
-			assert.include(test, 'delete');
-			test = get_http_methods(topic, ['get', 'post']);
-			assert.include(test, 'get');
-			assert.include(test, 'post');
-			assert.isUndefined(test['put']);
-		}
-	},
-	'the methods returned by the BigdoorServer' : {
-		topic: function() {
-			return get_http_methods(
-				api_server(
-					test_server,
-					'522adae4d28b49999bb42e0a21a13889'
-				),
-				'get',
-				'post',
-				'put'
-			);
-		},
-		'lets us retrieve an object from the server': function(topic) {
-			var called = false;
-			test_server.assert_on('get', function(url, query, callback) {
+				assert.equal(body.end_user_title, test_resource_obj.title);
+				assert.equal(body.pub_title, test_resource_obj.title);
 				assert.equal(
-					url,
-					'/api/publisher/' + 
-						'522adae4d28b49999bb42e0a21a13889/attribute/10'
+					body.end_user_description,
+					test_resource_obj.description
 				);
-				called = true;
+				assert.isUndefined(body.pub_description);
+				assert.equal(body.friendly_id, test_resource_obj.friendly_id);
 			});
-
-			topic.get( test_attribute, null);
-			assert.isTrue(called);
+			mock_server.return_on('post', {content: 0});
+			return get_http_methods(mock_server, 'post');
 		},
-		'lets us save an attribute to the server': function(topic) {
-			var called = false;
-			test_server.assert_on('post', function(url, query, body, callback) {
-				assert.equal(
-					url,
-					'/api/publisher/' + 
-						'522adae4d28b49999bb42e0a21a13889/attribute/10'
-				);
-				assert.equal(body.end_user_title, test_attribute.title);
-				assert.equal(body.friendly_id, test_attribute.friendly_id);
-				called = true;
-			});
-
-			topic.post(test_attribute, null);
-			assert.isTrue(called);
-		},
-		'lets us update an attribute on the server': function(topic) {
-			var called = false;
-			test_server.assert_on('put', function(url, query, body, callback) {
-				assert.equal(
-					url,
-					'/api/publisher/' + 
-						'522adae4d28b49999bb42e0a21a13889/attribute/10'
-				);
-				assert.equal(body.end_user_title, test_attribute.title);
-				assert.equal(body.friendly_id, test_attribute.friendly_id);
-				called = true;
-			});
-
-			topic.put(test_attribute, null);
-			assert.isTrue(called);
+		'include a post function': {
+			topic: function(methods) {
+				assert.isFunction(methods.post)
+				return methods.post
+			},
+			'that takes a resource object and calls the given callback': {
+				topic: function(post) {
+					post(test_resource_obj, this.callback);
+				},
+				'which returns the server response': function(error, body){
+					assert.equal(body, 0);
+				}
+			}
 		}
 	}
 }).run();
