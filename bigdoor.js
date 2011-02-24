@@ -131,6 +131,21 @@ var publisher = function(app_id, app_secret, server) {
 				user: user,
 				amount: amount
 			}
+		},
+		user_award: function(user, award) {
+			return {
+				request_content: function() {
+					return {
+						url: '/end_user/' + this.user.login + '/award',
+						query: {},
+						body: {
+							named_award_id: this.award.id
+						}
+					}
+				},
+				user: user,
+				award: award
+			}
 		}
 	}
 
@@ -275,6 +290,12 @@ var publisher = function(app_id, app_secret, server) {
 				callback(null, this);
 			}
 		}
+	}
+
+	var give_award_to_user = function(award, user, callback) {
+		var user_to_award = private_models.user_award( user, award );
+
+		object_server.post(user_to_award, callback);
 	}
 
 
@@ -680,13 +701,9 @@ var publisher = function(app_id, app_secret, server) {
 						callback
 					);
 				},
-				grant: function() {
-					// give to a user
-					// TODO this needs to return an object with a to method
-					// which executes the server side code to give to the
-					// provided user
+				give: function() {
 					return {
-						to: function() { } 
+						to: _.bind(give_award_to_user, this, this)
 					}
 				},
 				group: obj.group // the award group this belongs to
@@ -824,7 +841,7 @@ var publisher = function(app_id, app_secret, server) {
 		subtransaction: function(jsonObj) {
 			return {
 				currency: pub.currency.fromJSON(jsonObj.currency),
-				good: pub.good.fromJSON(jsonObj.named_good_id)
+				good: jsonObj.good ? pub.good.fromJSON(jsonObj.named_good) : null
 			}
 		}
 	}
@@ -919,7 +936,7 @@ var publisher = function(app_id, app_secret, server) {
 	var getByTitle = function(resource, title, callback) {
 		server.get(
 			urls[resource].get({}),
-			{'title__startswith': title},
+			{'end_user_title__startswith': title},
 			_.bind(
 				function(error, response, body) {
 					if ( !error ) {

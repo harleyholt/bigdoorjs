@@ -22,13 +22,13 @@ var pub = publisher('d6e92052c79b4f329c1f79c3a87ce604', 'b0435cee6f3d413c9775457
 //});
 
 // retrieve a user and a currency and give that currency to the user
-pub.user.get('starnostar', function(error, user) {
-	pub.currency.get('Life Experience', function(error, currency) {
-		currency.cheque(20).to(user,function(error, result) {
-			console.log(result[0].end_user.currency_balances);
-		});
-	});
-});
+//pub.user.get('starnostar', function(error, user) {
+//	pub.currency.get('Life Experience', function(error, currency) {
+//		currency.cheque(20).to(user,function(error, result) {
+//			console.log(result[0].end_user.currency_balances);
+//		});
+//	});
+//});
 
 /**
 // Create a new currency and save it
@@ -78,28 +78,36 @@ pub.currency.get('XP', function(error, xp) {
 });
 **/
 
+pub.award.get('Maybe Awards', function(error, start_award) {
+	console.log(start_award);
+	pub.user.get('starnostar', function(error, starnostar) {
+		start_award.give().to(starnostar, function(error, result) {
+			console.log(result);
+		});
+	});
+});
+
 /**
  // create an award group
-
 var award1 = pub.award({
-	title: 'Staring Out',
-	description: 'You win the very beginning'
+	title: 'Library Working',
+	description: 'The library is really starting to come together'
 });
 // since the award is not part of a group, saving it at this point will
 // only mark it as ready to save--not actually save to sever
 award1.save(function() { });
 var award2 = pub.award({
-	title: 'Getting There',
+	title: 'Giving Points',
 	description: 'You are getting somewhere now'
 });
 award2.save(function() { });
 var award3 = pub.award({
-	title: 'I wont be saved right now',
-	description: 'for serious'
+	title: 'Maybe Awards',
+	description: 'Are they working?'
 });
 
 pub.awardGroup({
-	title: 'Noob awards',
+	title: 'Working Awards',
 	description: 'For those about to rock',
 }, [award1, award2, award3]).save(function(error, group) { 
 	console.log(error);
@@ -109,7 +117,9 @@ pub.awardGroup({
 		console.log(obj);
 	});
 });
+**/
 
+/**
 // create and save a good group
 var good1 = pub.good({
 	title: 'Sword of Truth',
