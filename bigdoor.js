@@ -184,6 +184,10 @@ var publisher = function(app_id, app_secret, server) {
 		);
 	}
 
+	// either updates an existing resource on the server
+	// or create it with a transaction--for example, used
+	// by currencies to create a transaction that can be
+	// run to give that currency to a user
 	create_or_update_with_transaction = function(callback) {
 		if ( this.id ) {
 			create_or_update.call(this, callback);
@@ -362,6 +366,7 @@ var publisher = function(app_id, app_secret, server) {
 					);
 				},
 				currency: obj.currency,
+				good: obj.good,
 				default_amount: obj.default_amount || 1.00,
 				is_source: obj.is_source || true,
 				transaction: obj.transaction,
@@ -729,14 +734,7 @@ var publisher = function(app_id, app_secret, server) {
 					);
 				},
 				// add a good 
-				group: obj.group,
-				give: function(subtransaction) {
-					// add a good to a subtransaction that is given
-					// when the transaction is executed
-					return _.extend(subtransaction, {
-						good: this
-					});
-				}
+				group: obj.group
 			});
 		}
 	}
@@ -825,7 +823,8 @@ var publisher = function(app_id, app_secret, server) {
 		},
 		subtransaction: function(jsonObj) {
 			return {
-				currency: pub.currency.fromJSON(jsonObj.currency)
+				currency: pub.currency.fromJSON(jsonObj.currency),
+				good: pub.good.fromJSON(jsonObj.named_good_id)
 			}
 		}
 	}
