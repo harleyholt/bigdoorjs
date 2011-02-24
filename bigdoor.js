@@ -142,7 +142,6 @@ var publisher = function(app_id, app_secret, server) {
 			object_server.put(this, callback);
 		} else {
 			object_server.post(this, _.bind(function(error, obj) {
-				obj = JSON.parse(obj);
 				obj = obj[0];
 				this.id = obj.id; // update the object with its id
 									//TODO update any changed fields
@@ -160,7 +159,6 @@ var publisher = function(app_id, app_secret, server) {
 			this,
 			_.bind(function(error, cur) { 
 				// currency is created
-				cur = JSON.parse(cur);
 				cur = cur[0];
 				this.id = cur.id;
 				cur = this;
@@ -251,7 +249,6 @@ var publisher = function(app_id, app_secret, server) {
 			if ( transaction && transaction.id ) {
 				// we have a group that is saved in the database
 				object_server.post(this, _.bind(function(error, obj) {
-					obj = JSON.parse(obj);
 					obj = obj[0];
 					this.id = obj.id;
 					// transaction and subtransaction are saved
@@ -894,7 +891,7 @@ var publisher = function(app_id, app_secret, server) {
 		);
 	}
 
-	// add ability to retrieve resources by their ID
+	// retrieve a resource object by ID
 	var getByID = function(resource, id, callback) {
 		server.get(
 			urls[resource].get({id:id}),
@@ -904,7 +901,7 @@ var publisher = function(app_id, app_secret, server) {
 					if ( !error ) {
 						callback(
 							null, 
-							this.fromJSON(JSON.parse(body)[0])
+							this.fromJSON(body[0])
 						);
 					} else {
 						callback(error, null);
@@ -915,6 +912,7 @@ var publisher = function(app_id, app_secret, server) {
 		);
 	}
 
+	// rertrieve a resource object using the title it has been given
 	var getByTitle = function(resource, title, callback) {
 		server.get(
 			urls[resource].get({}),
@@ -922,7 +920,7 @@ var publisher = function(app_id, app_secret, server) {
 			_.bind(
 				function(error, response, body) {
 					if ( !error ) {
-						var results = JSON.parse(body)[0];
+						var results = body[0];
 
 						// we can't do full equality of titles in
 						// the bigdoor API (best we have is startswith,
@@ -950,6 +948,16 @@ var publisher = function(app_id, app_secret, server) {
 		);
 	}
 
+	/**
+	 * Implements getting a resource by an ID or Title depending 
+	 * on the argument type passed in. 
+	 *
+	 * Placed on all the publisher resource functions as 'get'
+	 * Examples:
+	 * url.get(2, callback); // get the URL with ID 2
+	 * url.get('Pretty Picture', callback); // get the URL with the given title
+	 * good.get(12, callback); // get the good with ID 12
+	 **/
 	var getWith = function(funs, identifier, callback) {
 		if ( typeof identifier == 'string' ) {
 			funs['title'](identifier, callback);
@@ -960,6 +968,8 @@ var publisher = function(app_id, app_secret, server) {
 		}
 	}
 
+	// attach a bound and curried getWith instance to the 
+	// publisher resource functions
 	for ( var resource in pub ) {
 		var funs = {
 			id: _.bind(getByID, pub[resource], resource),
@@ -973,6 +983,8 @@ var publisher = function(app_id, app_secret, server) {
 		);
 	}
 
+	// Users are retrieved by the end_user_login,
+	// so replace the default get
 	pub.user.get = function(identifier, callback) {
 		server.get(
 			urls.user.get({login:identifier}),
@@ -982,7 +994,7 @@ var publisher = function(app_id, app_secret, server) {
 					if ( !error ) {
 						callback(
 							null, 
-							this.fromJSON(JSON.parse(body)[0])
+							this.fromJSON(body[0])
 						);
 					} else {
 						callback(error, null);

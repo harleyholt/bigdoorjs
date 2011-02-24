@@ -114,7 +114,8 @@ module.exports.secure_server = function(server, app_secret) {
 }
 
 // provides completion of the url to include the api root with
-// the app id
+// the app id and changes the BigDoor response to an error
+// if the response code does not match the expected
 module.exports.api_server = function(server, app_id) {
 	return {
 		complete_url: function(url) {
@@ -123,17 +124,60 @@ module.exports.api_server = function(server, app_id) {
 			}
 			return '/api/publisher/'+app_id+url
 		},
+		handle_response: function(callback, error, response, content) {
+			if ( error ) {
+				// error with request, callback with that
+				callback(error, response, content);
+			} else {
+				content = JSON.parse(content);
+				if ( typeof content == 'Number' ) {
+					if ( 1 < content ) {
+						// there was an error so callback with error
+						callback(
+							{ BDMResponseCode: content },
+							response,
+							null
+						);
+					} else {
+						// no error but the content is just a number 
+						callback(error, response, content);
+					}
+				} else {
+					// no error and we have data for content
+					callback(error, response, content);
+				}
+			}
+		},
 		get: function(url, query, callback) {
-			server.get(this.complete_url(url), query, callback);
+			server.get(
+				this.complete_url(url),
+				query,
+				_.bind(this.handle_response, this, callback)
+			);
 		},
 		put: function(url, query, body, callback) {
-			server.put(this.complete_url(url), query, body, callback);
+			server.put(
+				this.complete_url(url),
+				query,
+				body,
+				_.bind(this.handle_response, this, callback)
+			);
 		},
 		post: function(url, query, body, callback) {
-			server.post(this.complete_url(url), query, body, callback);
+			server.post(
+				this.complete_url(url),
+				query,
+				body,
+				_.bind(this.handle_response, this, callback)
+			);
 		},
 		delete: function(url, query, body, callback) {
-			server.delete(this.complete_url(url), query, body, callback);
+			server.delete(
+				this.complete_url(url),
+				query,
+				body,
+				_.bind(this.handle_response, this, callback)
+			);
 		}
 	}
 }

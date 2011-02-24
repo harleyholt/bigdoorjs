@@ -3,7 +3,8 @@ var vows = require('vows'),
 	bigdoor = require('./bigdoor'),
 	urls = require('./urls'),
 	testData = require('./test/data').data,
-	servers = require('./servers');
+	servers = require('./servers'),
+	_ = require('underscore');
 
 var publisher = bigdoor.publisher;
 var signature = servers.signature;
@@ -61,15 +62,56 @@ vows.describe('Secure Request Signing').addBatch({
 	}
 }).run();
 
-var test_server = {
-	get: function(url, query, callback) { throw 'no assert' },
-	post: function(url, query, body, callback) { throw 'no assert' },
-	put: function(url, query, body, callback) { throw 'no assert' },
-	delete: function(url, query, body, callback) { throw 'no assert' },
-	assert_on: function(method, asserts) {
-		this[method] = asserts;
+var test_server = (function() {
+	var temp = {
+		asserts: { },
+		returns: { },
+		perform_get: function(url, query, callback) {
+			if ( this.asserts.get ) {
+				this.asserts.get(url, query, callback);
+			}
+			if ( this.returns.get ) {
+				callback(
+					this.returns.get.error,
+					this.returns.get.response,
+					this.returns.get.content
+				);
+			}
+		},
+		perform_action: function(method, url, query, body, callback) {
+			if ( this.asserts[method] ) {
+				this.asserts[method](url, query, body, callback);
+			}
+			if ( this.returns[method] ) {
+				callback(
+					this.returns[method].error,
+					this.returns[method].response,
+					this.returns[method].content
+				);
+			}
+		},
+		get: function(url, query, callback) {
+			this.perform_get(url, query, callback);
+		},
+		post: function(url, query, body, callback) {
+			this.perform_action('post', url, query, body, callback);
+		},
+		put: function(url, query, body, callback) {
+			this.perform_action('put', url, query, body, callback);
+		},
+		delete: function(url, query, body, callback) {
+			this.perform_action('delete', url, query, body, callback);
+		},
+		assert_on: function(method, asserts) {
+			this.asserts[method] = asserts;
+		},
+		return_on: function(method, results) {
+			this.returns[method] = results;
+		}
 	}
-}
+	//_.bindAll(temp, temp);
+	return temp;
+})();
 
 var test_attribute = {
 	id:10,
@@ -156,7 +198,8 @@ vows.describe('Test the BigdoorServer').addBatch({
 					'522adae4d28b49999bb42e0a21a13889'
 				),
 				'get',
-				'post'
+				'post',
+				'put'
 			);
 		},
 		'lets us retrieve an object from the server': function(topic) {
@@ -191,7 +234,19 @@ vows.describe('Test the BigdoorServer').addBatch({
 		},
 		'lets us update an attribute on the server': function(topic) {
 			var called = false;
-			test_server.assert
+			test_server.assert_on('put', function(url, query, body, callback) {
+				assert.equal(
+					url,
+					'/api/publisher/' + 
+						'522adae4d28b49999bb42e0a21a13889/attribute/10'
+				);
+				assert.equal(body.end_user_title, test_attribute.title);
+				assert.equal(body.friendly_id, test_attribute.friendly_id);
+				called = true;
+			});
+
+			topic.put(test_attribute, null);
+			assert.isTrue(called);
 		}
 	}
 }).run();

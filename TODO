@@ -2,7 +2,7 @@
 * Create a server wrapping the current one which changes BDM response codes to errors
 * Test creating/updating all the resources
 * Test retrieving resources through resource objects get function
-* Instant transactions for award, currency, goods:
+* Instant transactions for award, [DONE]currency, goods:
 	* // example_currency.give(20).to(example_end_user);
 * Attaching URLS and Attributes to resources
 * Client side functionality (non-secure server)

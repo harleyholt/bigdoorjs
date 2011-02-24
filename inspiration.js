@@ -25,7 +25,7 @@ var pub = publisher('d6e92052c79b4f329c1f79c3a87ce604', 'b0435cee6f3d413c9775457
 pub.user.get('starnostar', function(error, user) {
 	pub.currency.get('Life Experience', function(error, currency) {
 		currency.cheque(20).to(user,function(error, result) {
-			console.log(result);
+			console.log(result[0].end_user.currency_balances);
 		});
 	});
 });
