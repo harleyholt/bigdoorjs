@@ -543,7 +543,31 @@ var publisher = function(app_id, app_secret, server) {
 		},
 		currency: function(obj) {
 			var parent = this;
-			return _.extend(this.loyalty(obj), {
+			var instant_transaction = function(instant_name, is_source, amount) {
+
+				if(!is_source) {
+					amount = -amount; // for a sink invert amount
+				}
+
+				var instant = parent.subtransaction({
+					currency: this,
+					default_amount: amount,
+					is_source: is_source
+				});
+
+				var that = this;
+				instant[instant_name] = function(user, callback) {
+					if ( !that.meta.instant ) {
+						throw 'this currency can not be granted in this manner';
+					}
+					transaction = parent.transaction({
+						id: that.meta.instant,
+					}, instant).execute(user, amount, callback);
+				}
+				return instant;
+			}
+
+			var temp = _.extend(this.loyalty(obj), {
 				request_content: function() {
 					return loyalty_content(
 						this,
@@ -560,45 +584,18 @@ var publisher = function(app_id, app_secret, server) {
 				},
 				exchange_rate: obj.exchange_rate || 1, // points to dollars
 				type: obj.type || 5, // default: non-redeemable XP 
-				cheque: function(amount) {
-					// get a transaction that represents giving the
-					// user some currency
-					var instant = parent.subtransaction({
-						currency: this,
-						default_amount: amount,
-						is_source: true
-					});
-
-					var that = this;
-					instant.to = function(user, callback) {
-						if ( !that.meta.instant ) {
-							throw 'this currency can not be granted in this manner';
-						}
-						transaction = parent.transaction({
-							id: that.meta.instant,
-						}, instant).execute(user, amount, callback);
-					}
-					return instant;
-				},
-				debit: function(amount) {
-					// get a tranasction that debits the
-					// user some currency
-					return parent.subtransaction({
-						currency: this,
-						default_amount: amount || 1,
-						is_source: false
-					});
-				},
 				purchase: function(amount, good) {
 					//creates a transaction that is a sink and 
 					// grants a good and returns it
-					return good.give(this.subtransaction({
-						currency: this,
-						default_amount: amount,
-						is_source: false
-					}));
+					throw 'not implemented';
 				}
 			});
+
+			temp.cheque = _.bind(instant_transaction, temp, 'to', true);
+			temp.give = temp.cheque; // alias
+			temp.debit = _.bind(instant_transaction, temp, 'from', false);
+			temp.take = temp.debit;
+			return temp;
 		},
 		levelGroup: function(obj, levels) {
 			if ( !_.isArray(levels) ) {
