@@ -440,7 +440,11 @@ vows.describe('Converting From JSON').addBatch({
 				check_default_properties(topic, testData.named_award_collection);
 			},
 			'a collection of awards containing': function(topic) {
-				throw 'not yet implemented';
+				assert.isArray(topic.awards);
+				assert.equal(topic.awards.length, 1);
+				beastmaster = topic.awards[0];
+				assert.equal(beastmaster.title, 'BeastMaster');
+				assert.equal(beastmaster.group.id, topic.id);
 			}
 		}
 	},
@@ -483,7 +487,19 @@ vows.describe('Converting From JSON').addBatch({
 					testData.named_level_collection);
 			},
 			'a collection of levels': function(topic) {
-				throw 'not implemented yet'
+				assert.isArray(topic.levels);
+				assert.equal(topic.levels.length, 2);
+				var newbie = _.select(
+					topic.levels,
+					function(x) {
+						return x.title == 'Newbie';
+					}
+				);
+				assert.equal(newbie.length, 1);
+				newbie = topic.levels[0];
+				assert.equal(newbie.title, 'Newbie');
+				assert.equal(newbie.group.id, topic.id);
+				assert.equal(newbie.threshold, 10);
 			}
 		}
 	},

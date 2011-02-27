@@ -80,7 +80,7 @@ var data = {
 		"pub_title": "testing", 
 		"named_awards": [
 			{
-				"end_user_description": "for the only one", 
+				"end_user_description": "for you command the beasts", 
 				"read_only": 0, 
 				"modified_timestamp": 1297497767, 
 				"pub_title": "test", 
@@ -90,7 +90,7 @@ var data = {
 				"urls": [], 
 				"created_timestamp": 1297497767, 
 				"pub_description": JSON.stringify({}),
-				"end_user_title": "this is only a test", 
+				"end_user_title": "BeastMaster", 
 				"relative_weight": null, 
 				"id": 7293
 			}

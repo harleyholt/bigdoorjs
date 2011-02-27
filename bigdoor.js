@@ -598,7 +598,7 @@ var publisher = function(app_id, app_secret, server) {
 			return temp;
 		},
 		levelGroup: function(obj, levels) {
-			if ( !_.isArray(levels) ) {
+			if ( levels && !_.isArray(levels) ) {
 				levels = _.rest(_.toArray(arguments));
 			}
 			return _.extend(this.loyalty(obj), {
@@ -620,7 +620,7 @@ var publisher = function(app_id, app_secret, server) {
 					);
 				},
 				currency: obj.currency,
-				levels: levelCollection(levels)
+				levels: levels ? levelCollection(levels) : obj.levels ? levelCollection(obj.levels) : null
 			});
 		},
 		level: function(obj) {
@@ -792,43 +792,15 @@ var publisher = function(app_id, app_secret, server) {
 			}
 		},
 		url: toEmpty,
-		awardGroup: function(jsonObj) {
-			var temp = {
-				awards: _.map(jsonObj.named_awards, pub.levelGroup.fromJSON)
-			}
-			for ( var i = 0; i < temp.awards.length; i++ ){
-				temp.awards[i].group = temp;
-			}
-			return temp;
-		},
 		award: function(jsonObj) {
 			return {
 				group: jsonObj.named_award_collection_id
 			}
 		},
-		levelGroup: function(jsonObj) {
-			var temp = {
-				levels: _.map(jsonObj.named_levels, pub.levelGroup.fromJSON),
-				currency: jsonObj.currency_id
-			}
-			for ( var i = 0; i <  temp.levels; i++ ) {
-				temp.levels[i].group = temp;
-			}
-			return temp;
-		},
 		level: function(jsonObj) {
 			return {
 				group: jsonObj.named_level_collection_id,
 			}
-		},
-		goodGroup: function(jsonObj) {
-			var temp = {
-				goods: _.map(jsonObj.named_goods, pub.goodGroup.fromJSON),
-			}
-			for ( var i = 0; i < temp.levels; i++ ) {
-				temp.goods[i].group = temp;
-			}
-			return temp;
 		},
 		good: function(jsonObj) {
 			return {
@@ -865,6 +837,61 @@ var publisher = function(app_id, app_secret, server) {
 		}(i);
 	}
 
+	// add the levelGroup.fromJSON method
+	// this needs to handle the nested levels and then make
+	// sure they refer to the returned object
+	pub.levelGroup.fromJSON = function(jsonObj) {
+		var levels = _.map(jsonObj.named_levels, pub.level.fromJSON);
+		var currency = jsonObj.currency_id;
+
+		var obj = _.extend(
+			_.clone(jsonObj),
+			loyalty_conversion(jsonObj),
+			{
+				currency: currency
+			}
+		);
+
+		var temp = pub.levelGroup(obj, levels);
+
+		// now we have levelGroup--alter the levels
+		// so that they reference this guy
+		for ( var i = 0; i < temp.levels.length; i++ ) {
+			temp.levels[i].group = temp;
+		}
+		return temp;
+	}
+
+	pub.awardGroup.fromJSON = function(jsonObj) {
+		var awards = _.map(jsonObj.named_awards, pub.award.fromJSON);
+
+		var obj = _.extend(
+			_.clone(jsonObj),
+			loyalty_conversion(jsonObj)
+		);
+
+		var temp = pub.awardGroup(obj, awards);
+		for ( var i = 0; i < temp.awards.length; i++ ){
+			temp.awards[i].group = temp;
+		}
+		return temp;
+	}
+
+	pub.goodGroup.fromJSON = function(jsonObj) {
+		var goods = _.map(jsonObj.named_goods, pub.good.fromJSON);
+
+		var obj = _.extend(
+			_.clone(jsonObj),
+			loyalty_conversion(jsonObj)
+		);
+
+		var temp = pub.goodGroup(obj, goods);
+		for ( var i = 0; i < temp.goods.length; i++ ) {
+			temp.goods[i].group = temp;
+		}
+		return temp;
+	}
+
 	// transaction is a special conversion case because the resource
 	// function requires a primary subtransaction argument followed
 	// by a set of 0 or more subtransactions
@@ -886,12 +913,18 @@ var publisher = function(app_id, app_secret, server) {
 		);
 
 		var obj = _.extend(
-			jsonObj,
+			_.clone(jsonObj),
 			loyalty_conversion(jsonObj)
 		);
 
 		var arguments = [obj, primary].concat(secondary);
-		return pub.transaction.apply(pub, arguments);
+		var temp = pub.transaction.apply(pub, arguments);
+		// now that we have a transaction, set all the subtransactions
+		// to reference it
+		for ( var i = 0; i < temp.subtransactions.length; i++ ) {
+			temp.subtransactions[i].transaction = temp;
+		}
+		return temp;
 	}
 
 	// user is a special case because it does not have the default
