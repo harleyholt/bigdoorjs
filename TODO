@@ -1,4 +1,6 @@
 * Client side functionality (non-secure server)
+	* Not that I yet understand how I'm going to do this while sharing code
+		between the two
 * Change the create_or_update functionality to use the created time so it unifies the user and other objects
 * [x]Create a server wrapping the current one which changes BDM response codes to errors
 	* maybe need to make this a little nicer by pulling in header reason to the error itself?
@@ -7,3 +9,4 @@
 * Instant transactions for award, [DONE]currency, goods:
 	* // example_currency.give(20).to(example_end_user);
 * Attaching URLS and Attributes to resources
+* Use Promises or Continuations or whatever the hotness is these days

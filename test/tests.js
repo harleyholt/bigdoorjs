@@ -1,9 +1,9 @@
 var vows = require('vows'),
 	assert = require('assert'),
-	bigdoor = require('./bigdoor'),
-	urls = require('./urls'),
-	testData = require('./test/data').data,
-	servers = require('./servers'),
+	testData = require('./data').data,
+	bigdoor = require('./../src/bigdoor'),
+	urls = require('./../src/urls'),
+	servers = require('./../src/servers'),
 	_ = require('underscore');
 
 var publisher = bigdoor.publisher;

@@ -18,7 +18,6 @@
  *     currency3.give(40),
  * ).unsecure().save(function(error, transaction) { transaction.run(eu) }); 
  **/
-
  
 var _ = require('underscore'),
 	urls = require('./urls'),
@@ -36,7 +35,7 @@ var _ = require('underscore'),
  * publisher.bigdoor.com and use the provided app key and app secret key
  * to create a new publisher.
  **/
-var publisher = function(app_id, app_secret, server) {
+module.exports.publisher = function(app_id, app_secret, server) {
 
 	var urlCollection = function(urls) {
 		return urls;
@@ -1064,6 +1063,5 @@ var publisher = function(app_id, app_secret, server) {
 	return pub;
 }
 
-module.exports.publisher = publisher;
 
 

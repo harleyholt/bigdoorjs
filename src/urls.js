@@ -12,7 +12,7 @@ var _ = require('underscore');
  * url = urls.level.get({id:42, group:{id:12}}); 
  *     //== 'named_level_collection/12/named_level/42'
  **/
-var urls = (function() {
+module.exports = (function() {
 	var that = {};
 	var _get_url = function(obj) {
 		if ( obj && obj.id ) {
@@ -114,8 +114,5 @@ var urls = (function() {
 	for ( var url in that ) {
 		that[url].get = _.bind(that[url].get, that[url]);
 	}
-
 	return that;
 })();
-
-module.exports = urls;
