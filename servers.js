@@ -60,7 +60,8 @@ module.exports.http_server = function() {
 					method: method,
 					url: url,
 					body: body
-				}
+				},
+				callback
 			);
 		},
 		get: function(url, query, callback) {
@@ -114,7 +115,7 @@ module.exports.secure_server = function(server, app_secret) {
 		get: function(url, query, callback) {
 			query = query || {};
 			query['time'] = time();
-			query['sig'] = signature(app_secret, url, query, body);
+			query['sig'] = signature(app_secret, url, query, {});
 			server.get(this.complete_url(url), query, callback);
 		},
 		put: function(url, query, body, callback) {
