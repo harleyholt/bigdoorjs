@@ -35,7 +35,8 @@ var _ = require('underscore'),
  * publisher.bigdoor.com and use the provided app key and app secret key
  * to create a new publisher.
  **/
-module.exports.publisher = function(app_id, app_secret, server) {
+var bigdoor = bigdoor || {};
+bigdoor.publisher = function(app_id, app_secret, server) {
 
 	var urlCollection = function(urls) {
 		return urls;
@@ -1063,5 +1064,4 @@ module.exports.publisher = function(app_id, app_secret, server) {
 	return pub;
 }
 
-
-
+module.exports.publisher = bigdoor.publisher;
