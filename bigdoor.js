@@ -25,8 +25,7 @@ var _ = require('underscore'),
 	http_server = require('./servers').http_server,
 	secure_server = require('./servers').secure_server,
 	api_server = require('./servers').api_server,
-	get_http_methods = require('./servers').get_http_methods,
-	guid = require('./servers').guid;
+	get_http_methods = require('./servers').get_http_methods;
 
 
 /**
@@ -299,12 +298,6 @@ var publisher = function(app_id, app_secret, server) {
 		}
 	}
 
-	var give_award_to_user = function(award, user, callback) {
-		var user_to_award = private_models.user_award( user, award );
-
-		object_server.post(user_to_award, callback);
-	}
-
 
 	// the pub object is returned
 	// the purpose of the resource objects contained with in is to define
@@ -333,7 +326,7 @@ var publisher = function(app_id, app_secret, server) {
 				login: obj.login || obj,
 				best_guess_name: obj.best_guess_name ||'' ,
 				best_guess_profile_image: obj.best_guess_profile_image || '',
-				guid: obj.guid || guid()
+				guid: obj.guid
 			}
 		},
 		// Give an object the basic fields used by BigDoor objects.
@@ -688,6 +681,12 @@ var publisher = function(app_id, app_secret, server) {
 			});
 		},
 		award: function(obj) {
+
+			var give_award_to_user = function(award, user, callback) {
+				var user_to_award = private_models.user_award( user, award );
+				object_server.post(user_to_award, callback);
+			}
+
 			return _.extend(this.loyalty(obj), {
 				request_content: function() {
 					return loyalty_content(

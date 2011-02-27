@@ -49,6 +49,9 @@ module.exports.time = time;
 // very lowest level sever--takes the arguments and does a request
 module.exports.http_server = function() {
 	return {
+		complete_url: function(url) {
+			return 'http://' + url;
+		},
 		action: function(method, url, query, body, callback) {
 			var qs = querystring.stringify(query || {});
 			if ( qs.length ) {
@@ -58,7 +61,7 @@ module.exports.http_server = function() {
 			request(
 				{
 					method: method,
-					url: url,
+					url: this.complete_url(url),
 					body: body
 				},
 				callback
@@ -72,7 +75,7 @@ module.exports.http_server = function() {
 			request(
 				{
 					method: 'GET',
-					url: url
+					url: this.complete_url(url)
 				},
 				callback
 			);
@@ -92,13 +95,16 @@ module.exports.http_server = function() {
 // adds all necessary processing to a basic request in order to 
 // meet the security requirements of secure requests and then
 // actually preforms the request
-module.exports.secure_server = function(server, app_secret) {
+module.exports.secure_server = function(server, app_secret, domain) {
+	if ( !domain ) {
+		domain = 'local.publisher.bigdoor.com';
+	}
 	return {
 		complete_url: function(url) {
 			if (!url.match(/^\//)) {
 				url = '/'+url;
 			}
-			return 'http://local.publisher.bigdoor.com' + url;
+			return domain + url;
 		},
 		action: function(method, url, query, body, callback) {
 			var t = time();
@@ -130,16 +136,57 @@ module.exports.secure_server = function(server, app_secret) {
 	}
 }
 
+// allows us to proxy all requests so that posts can be done with
+// gets (to support eventual client side implementation)
+module.exports.proxied_server = function(server, domain) {
+	if ( !domain ) {
+		domain = 'local.publisher.bigdoor.com';
+	}
+	return {
+		complete_url: function(url) { 
+			if (!url.match(/^\//)) {
+				url = '/'+url;
+			}
+			return domain + url;
+		},
+		make_query: function(method, url, query, body) {
+			body = body || {}
+			for ( var v in body ) {
+				query['$' + v] = body[v];
+			}
+			query['method'] = method;
+			query['non_secure'] = 1;
+			return query;
+		},
+		get: function(url, query, callback) {
+			server.get(url, make_query('get', url, query), callback);
+		},
+		post: function(url, query, body, callback) {
+			server.get(url, make_query('post', url, query, body), callback);
+		},
+		put: function(url, query, body, callback) {
+			server.get(url, make_query('put', url, query, body), callback);
+		},
+		delete: function(url, query, body, callback) {
+			server.get(url, make_query('delete', url, query, body), callback);
+		}
+	}
+}
+
 // provides completion of the url to include the api root with
 // the app id and changes the BigDoor response to an error
 // if the response code does not match the expected
-module.exports.api_server = function(server, app_id) {
+module.exports.api_server = function(server, app_id, proxy) {
 	return {
 		complete_url: function(url) {
 			if( !url.match(/^\//) ) { 
 				url = '/'+url; 
 			}
-			return '/api/publisher/'+app_id+url
+			if ( proxy ) {
+				return '/api/publisher/'+app_id+'/proxy'+url;
+			} else {
+				return '/api/publisher/'+app_id+url;
+			}
 		},
 		handle_response: function(callback, error, response, content) {
 			if ( error ) {
