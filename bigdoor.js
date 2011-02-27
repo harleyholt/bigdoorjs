@@ -22,6 +22,7 @@
  
 var _ = require('underscore'),
 	urls = require('./urls'),
+	http_server = require('./servers').http_server,
 	secure_server = require('./servers').secure_server,
 	api_server = require('./servers').api_server,
 	get_http_methods = require('./servers').get_http_methods,
@@ -61,7 +62,13 @@ var publisher = function(app_id, app_secret, server) {
 
 	if (!server) {
 		// default to the API server using secure requests
-		server = api_server(secure_server(null, app_secret), app_id);
+		server = api_server(
+			secure_server(
+				http_server(), 
+				app_secret
+			), 
+			app_id
+		);
 	}
 	// object server takes the raw server and instead allows pub objects
 	// to be used as arguments with url, query, and body arguments being

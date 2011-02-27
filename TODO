@@ -1,8 +1,9 @@
+* Client side functionality (non-secure server)
 * Change the create_or_update functionality to use the created time so it unifies the user and other objects
-* Create a server wrapping the current one which changes BDM response codes to errors
+* [x]Create a server wrapping the current one which changes BDM response codes to errors
+	* maybe need to make this a little nicer by pulling in header reason to the error itself?
 * Test creating/updating all the resources
 * Test retrieving resources through resource objects get function
 * Instant transactions for award, [DONE]currency, goods:
 	* // example_currency.give(20).to(example_end_user);
 * Attaching URLS and Attributes to resources
-* Client side functionality (non-secure server)

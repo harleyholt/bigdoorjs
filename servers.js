@@ -41,27 +41,56 @@ var time = function() {
 	return Date.now() / 1000;
 }
 
-// return a signed URL given a url, query, and body
-var secure_url = function(app_secret, url, query, body) {
-		var sign = signature(app_secret, url, query, body);
-		query['sig'] = sign;
-		var qs = querystring.stringify(query || {});
-		if ( qs.length ) {
-			url = url+'?'+qs;
-		}
-		return url;
-}
-
 module.exports.signature = signature;
 module.exports.token = token;
 module.exports.guid = guid;
 module.exports.time = time;
 
+// very lowest level sever--takes the arguments and does a request
+module.exports.http_server = function() {
+	return {
+		action: function(method, url, query, body, callback) {
+			var qs = querystring.stringify(query || {});
+			if ( qs.length ) {
+				url = url + '?' + qs;
+			}
+			var body = querystring.stringify(body || {});
+			request(
+				{
+					method: method,
+					url: url,
+					body: body
+				}
+			);
+		},
+		get: function(url, query, callback) {
+			var qs = querystring.stringify(query || {});
+			if ( qs.length ) {
+				url = url + '?' + qs;
+			}
+			request(
+				{
+					method: 'GET',
+					url: url
+				},
+				callback
+			);
+		},
+		post: function(url, query, body, callback) {
+			this.action('POST', url, query, body, callback);
+		},
+		put: function(url, query, body, callback) {
+			this.action('PUT', url, query, body, callback);
+		},
+		delete: function(url, query, body, callback) {
+			this.action('DELETE', url, query, body, callback);
+		}
+	}
+}
+
 // adds all necessary processing to a basic request in order to 
 // meet the security requirements of secure requests and then
 // actually preforms the request
-// TODO: this should actually call a lower level server which actually does
-// the request which can be used by anybody
 module.exports.secure_server = function(server, app_secret) {
 	return {
 		complete_url: function(url) {
@@ -78,37 +107,24 @@ module.exports.secure_server = function(server, app_secret) {
 			body['token'] = token();
 			body['time'] = t;
 
-			url = secure_url(app_secret, url, query, body);
-			request(
-				{
-					method: method,
-					url: this.complete_url(url),
-					body: querystring.stringify(body)
-				},
-				callback
-			);
+			query['sig'] = signature(app_secret, url, query, body);
+
+			server[method](this.complete_url(url), query, body, callback);
 		},
 		get: function(url, query, callback) {
 			query = query || {};
 			query['time'] = time();
-
-			url = secure_url(app_secret, url, query);
-			request(
-				{
-					method: 'GET',
-					url: this.complete_url(url)
-				},
-				callback
-			);
+			query['sig'] = signature(app_secret, url, query, body);
+			server.get(this.complete_url(url), query, callback);
 		},
 		put: function(url, query, body, callback) {
-			this.action('PUT', url, query, body, callback);
+			this.action('put', url, query, body, callback);
 		},
 		post: function(url, query, body, callback) {
-			this.action('POST', url, query, body, callback);
+			this.action('post', url, query, body, callback);
 		},
 		delete: function(url, query, body, callback) {
-			this.action('DELETE', url, query, body, callback);
+			this.action('delete', url, query, body, callback);
 		}
 	}
 }

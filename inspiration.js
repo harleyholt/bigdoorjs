@@ -12,6 +12,7 @@ var pub = publisher('d6e92052c79b4f329c1f79c3a87ce604', 'b0435cee6f3d413c9775457
 //});
 
 // retrieve a user, a trasaction, and run the transaction against the user
+/**
 pub.user.get('starnostar', function(error, user) {
 	pub.transaction.get('grant Life Experience', function(error, transaction) {
 		console.log(transaction.subtransactions);
@@ -20,6 +21,7 @@ pub.user.get('starnostar', function(error, user) {
 		});
 	});
 });
+**/
 
 // retrieve a user and a currency and give that currency to the user
 //pub.user.get('starnostar', function(error, user) {
@@ -78,7 +80,6 @@ pub.currency.get('XP', function(error, xp) {
 });
 **/
 
-/**
 pub.award.get('Maybe Awards', function(error, start_award) {
 	console.log(start_award);
 	pub.user.get('starnostar', function(error, starnostar) {
@@ -87,7 +88,6 @@ pub.award.get('Maybe Awards', function(error, start_award) {
 		});
 	});
 });
-**/
 
 /**
  // create an award group
