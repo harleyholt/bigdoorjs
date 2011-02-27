@@ -4,7 +4,7 @@ var _ = require('underscore'),
 	request = require('request'),
 	crypto = require('crypto');
 
-module.exports.signature = function(secret, url, query, body) {
+var signature = function(secret, url, query, body) {
 	query = query || {};
 	body = body || {};
 
@@ -28,18 +28,22 @@ module.exports.signature = function(secret, url, query, body) {
 	hash.update(key);
 	return hash.digest(encoding='hex');
 }
+module.exports.signature = signature;
 
-module.exports.token = function() {
+var token = function() {
 	return uuid().replace(/-/g, '').toLowerCase();
 }
+module.exports.token = token;
 
-module.exports.guid = function() {
+var guid = function() {
 	return uuid().toLowerCase();
 }
+module.exports.guid = guid;
 
-module.exports.time = function() {
+var time = function() {
 	return Date.now() / 1000;
 }
+module.exports.time = time;
 
 // very lowest level sever--takes the arguments and does a request
 module.exports.http_server = function() {

@@ -1,6 +1,6 @@
 // A file of functional "tests" I wrote to quickly try things that the system needs to be able to do. keeping it around as an example of use. Will eventually merge into other docs and the README in the magical future when I have time
 
-var publisher = require('./bigdoor').publisher,
+var publisher = require('./src/bigdoor').publisher,
 	_ = require('underscore');
 
 // harley+test_bdm_rhh507@bigdoor.com
