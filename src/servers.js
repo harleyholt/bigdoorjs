@@ -261,7 +261,7 @@ bigdoor.servers = (function(_) {
 						// the proxy changes the return structure
 						content = content.content;
 					}
-					if ( typeof content == 'Number' ) {
+					if ( typeof content == 'number' ) {
 						if ( 1 < content ) {
 							// there was an error so callback with error
 							callback(

@@ -199,10 +199,14 @@ bigdoor.publisher = (function(_) {
 				object_server.put(this, callback);
 			} else {
 				object_server.post(this, _.bind(function(error, obj) {
-					obj = obj[0];
-					this.id = obj.id; // update the object with its id
-										//TODO update any changed fields
-					callback(error, this);
+					if ( !error ) {
+						obj = obj[0];
+						this.id = obj.id; // update the object with its id
+											//TODO update any changed fields
+						callback(error, this);
+					} else {
+						callback(error, null);
+					}
 				}, this));
 			}
 		}
@@ -362,7 +366,7 @@ bigdoor.publisher = (function(_) {
 					login: obj.login || obj,
 					best_guess_name: obj.best_guess_name ||'' ,
 					best_guess_profile_image: obj.best_guess_profile_image || '',
-					guid: obj.guid
+					guid: obj.guid || ''
 				}
 			},
 			// Give an object the basic fields used by BigDoor objects.
@@ -643,7 +647,7 @@ bigdoor.publisher = (function(_) {
 							this,
 							'levelGroup',
 							{
-								currency_id: currency.id || currency
+								currency_id: this.currency.id || this.currency
 							}
 						);
 					},
@@ -666,11 +670,16 @@ bigdoor.publisher = (function(_) {
 							this,
 							'level',
 							{
-								threshold: this.theshold
+								threshold: this.threshold
 							}
 						);
 					},
 					save: function(callback) { 
+
+						if ( ! this.threshold ) {
+							throw 'can not be saved without threshold'
+						}
+
 						create_or_update_group_member.call(
 							this,
 							this.group,
