@@ -31,6 +31,8 @@ bigdoor.servers = (function(_) {
 		// wrap jQuery.param to provide querystring.stringize
 		var querystring = {
 			stringify: function(obj) {
+				// to support jsonp calls, need to keep ? character
+				// without escaping
 				if ( obj.callback && obj.callback == '?' ) {
 					delete obj.callback
 					qs = jQuery.param(obj);
@@ -136,7 +138,7 @@ bigdoor.servers = (function(_) {
 	// actually preforms the request
 	var secure_server = function(server, app_secret, domain) {
 		if ( !domain ) {
-			domain = 'local.publisher.bigdoor.com';
+			domain = 'api.bigdoor.com';
 		}
 		return {
 			complete_url: function(url) {
@@ -179,7 +181,7 @@ bigdoor.servers = (function(_) {
 	// gets (to support eventual client side implementation)
 	var proxied_server = function(server, domain) {
 		if ( !domain ) {
-			domain = 'local.publisher.bigdoor.com';
+			domain = 'api.bigdoor.com';
 		}
 		return {
 			complete_url: function(url) { 
