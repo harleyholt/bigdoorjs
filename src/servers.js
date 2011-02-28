@@ -1,11 +1,52 @@
-var _ = require('underscore'),
-	querystring = require('querystring'),
-	uuid = require('node-uuid'),
-	request = require('request'),
-	crypto = require('crypto');
+
+if ( typeof exports != 'undefined' ) {
+	var _ = require('underscore');
+}
 
 var bigdoor = bigdoor || {};
-bigdoor.servers = function() {
+bigdoor.servers = (function(_) {
+
+	if ( typeof exports != 'undefined' ) {
+		var querystring = require('querystring'),
+			uuid = require('node-uuid'),
+			request = require('request'),
+			crypto = require('crypto');
+	} else {
+		// wrap the jQuery ajax method to meet request.js interface
+		// TODO: this tied to JSONP cross-domain requesets right now and
+		// it shouldn't be but not sure what to do about that
+		var request = function(obj, callback) {
+			jQuery.ajax({
+				url: obj.url,
+				error: function(jqXHR, textStatus, errorThrown) {
+					callback(errorThrown, null, null);
+				},
+				success: function(data, textStatus, jqXHR) {
+					callback(null, null, data);
+				},
+				data: obj.body,
+				dataType: 'jsonp'
+			});
+		}
+		// wrap jQuery.param to provide querystring.stringize
+		var querystring = {
+			stringify: function(obj) {
+				if ( obj.callback && obj.callback == '?' ) {
+					delete obj.callback
+					qs = jQuery.param(obj);
+					if ( qs ) {
+						qs = qs + '&callback=?';
+					} else {
+						qs = 'callback=?';
+					}
+					return qs;
+				} else {
+					return jQuery.param(obj);
+				}
+			}
+		}
+	}
+
 	var signature = function(secret, url, query, body) {
 		query = query || {};
 		body = body || {};
@@ -42,6 +83,7 @@ bigdoor.servers = function() {
 	var time = function() {
 		return Date.now() / 1000;
 	}
+
 
 	// very lowest level sever--takes the arguments and does a request
 	var http_server = function() {
@@ -146,26 +188,43 @@ bigdoor.servers = function() {
 				}
 				return domain + url;
 			},
-			make_query: function(method, url, query, body) {
+			make_query: function(method, query, body) {
 				body = body || {}
 				for ( var v in body ) {
 					query['$' + v] = body[v];
 				}
 				query['method'] = method;
 				query['non_secure'] = 1;
+				query['callback'] = '?';
 				return query;
 			},
 			get: function(url, query, callback) {
-				server.get(url, make_query('get', url, query), callback);
+				server.get(
+					this.complete_url(url),
+					this.make_query('get', query),
+					callback
+				);
 			},
 			post: function(url, query, body, callback) {
-				server.get(url, make_query('post', url, query, body), callback);
+				server.get(
+					this.complete_url(url),
+					this.make_query('post', query, body),
+					callback
+				);
 			},
 			put: function(url, query, body, callback) {
-				server.get(url, make_query('put', url, query, body), callback);
+				server.get(
+					this.complete_url(url),
+					this.make_query('put', query, body),
+					callback
+				);
 			},
 			delete: function(url, query, body, callback) {
-				server.get(url, make_query('delete', url, query, body), callback);
+				server.get(
+					this.complete_url(url),
+					this.make_query('delete', query, body),
+					callback
+				);
 			}
 		}
 	}
@@ -190,7 +249,16 @@ bigdoor.servers = function() {
 					// error with request, callback with that
 					callback(error, response, content);
 				} else {
-					content = JSON.parse(content);
+					if ( ! proxy ) {
+						// HACK: JSONP requests are already parsed,
+						// so only do this if we didn't use proxy
+						// TODO: I hate cases like this--how can this
+						// be avoided?
+						content = JSON.parse(content);
+					} else { 
+						// the proxy changes the return structure
+						content = content.content;
+					}
 					if ( typeof content == 'Number' ) {
 						if ( 1 < content ) {
 							// there was an error so callback with error
@@ -301,7 +369,7 @@ bigdoor.servers = function() {
 		return results;
 	}
 
-	return {
+	var temp = {
 		token: token,
 		signature: signature,
 		time: time,
@@ -312,6 +380,13 @@ bigdoor.servers = function() {
 		api_server: api_server,
 		get_http_methods: get_http_methods
 	}
-}();
 
-module.exports = bigdoor.servers;
+	if ( typeof exports != 'undefined' ) {
+		module.exports = temp;
+	}
+
+	return temp;
+
+})(_);
+
+

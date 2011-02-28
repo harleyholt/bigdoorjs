@@ -1,4 +1,6 @@
-var _ = require('underscore');
+if ( typeof exports != 'undefined' ) {
+	var _ = require('underscore');
+}
 
 /**
  * urls provides a mapping from the resource object names to the 
@@ -116,8 +118,12 @@ bigdoor.urls = (function() {
 	for ( var url in that ) {
 		that[url].get = _.bind(that[url].get, that[url]);
 	}
+
+	if ( typeof exports != 'undefined' ) {
+		module.exports = that;
+	}
+
 	return that;
 })();
 
 
-module.exports = bigdoor.urls;
