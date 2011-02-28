@@ -10,12 +10,39 @@ bigdoorjs is a javascript library that simplifies use of the web service. Rather
 
 bigdoorjs can be used by node.js and in-browser applications.
 
-conventions
+Conventions
 -----------
 bigdoorjs is object oriented javascript but it does not use the "new" keyword. Objects are returned by functions not by constructors. This is still under consideration so the way it is may change. If you have an argument either way, send it my way.
 
-Examples
+Example
 --------
+	var app_key = 'd6e92052c79b4f329c1f79c3a87ce604';
+	var secret_key = 'b0435cee6f3d413c97754574cddeb3f8';
+	var publisher = require('bigdoor').publisher(app_key, secret_key);
+
+	// create a new currency called XP
+	var xp = publisher.currency({
+		title: 'XP',
+		description: 'Experience Points awarded to the user for performing valuable actions'
+	});
+
+	// save that currency
+	xp.save(function(error, xp) {
+		// XP has been saved
+		// in order to give this to someone, we need to 
+		// retrieve a user by their end_user_login (their ID)
+		publisher.user.get(
+			'example_end_user_login_string',
+			function(error, example_user) {
+				// give 50 of this new currency to this user
+				xp.give(50).to(example_user, function(error, balance) {
+					console.log(example_user.end_user_login +
+						'now has ' + balance + xp.title);
+				});
+			}
+		);
+	});
+
 The simplest form of gamification is giving points to users as a reward for an action. Experience points in RPGs, chips in poker, your score in Pacman, your post count on a forum--these are all examples of points given to users. Points can also be called virtual currency or just currency--they are all the same in bigdoorjs.
 
 Points are the backbone of a game. bigdoorjs makes awarding and tracking these ppoints easy.
