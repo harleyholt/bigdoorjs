@@ -1,4 +1,5 @@
-BigDoor:
+BigDoor
+=======
 BigDoor supports gamification at the API level with RESTful web service.
 
 Points, virtual currency, awards, levels, and badges are stored, granted, and retrieved using HTTP requests. More information about the service is available for developers at publisher.bigdoor.com.
