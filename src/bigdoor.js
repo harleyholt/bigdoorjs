@@ -57,7 +57,6 @@ bigdoor.publisher = (function(_) {
 	 **/
 	var publisher = function(app_id, app_secret, server) {
 
-
 		if( typeof app_secret != 'string') {
 			server = app_secret;
 			app_secret = null;
@@ -1120,7 +1119,10 @@ bigdoor.publisher = (function(_) {
 		// so replace the default get
 		pub.user.get = function(identifier, callback) {
 			server.get(
-				urls.user.get({login:identifier}),
+				urls.user.get({
+					on_server: true, // HACK HACK HACK
+					login:identifier
+				}),
 				{},
 				_.bind(
 					function(error, response, body) {

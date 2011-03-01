@@ -1,10 +1,30 @@
 // A file of functional "tests" I wrote to quickly try things that the system needs to be able to do. keeping it around as an example of use. Will eventually merge into other docs and the README in the magical future when I have time
 
 var publisher = require('./src/bigdoor').publisher,
+	servers = require('./src/servers'),
 	_ = require('underscore');
 
-// harley+test_bdm_rhh507@bigdoor.com
-var pub = publisher('d6e92052c79b4f329c1f79c3a87ce604', 'b0435cee6f3d413c97754574cddeb3f8');
+
+var api_server = servers.api_server,
+	secure_server = servers.secure_server,
+	http_server = servers.http_server;
+
+var app_key = 'd6e92052c79b4f329c1f79c3a87ce604';
+var app_secret = 'b0435cee6f3d413c97754574cddeb3f8';
+
+// harley+test_bdm_rhh507@bigdoor.coms
+var pub = publisher(
+	app_key,
+	app_secret,
+	api_server(
+		secure_server(
+			http_server(),
+			app_secret,
+			'local.publisher.bigdoor.com'
+		),
+		app_key
+	)
+);
 
 // create and save a user with an end_user_login of starnostar
 //pub.user('starnostar').save(function(error, user) {
@@ -84,6 +104,7 @@ pub.award.get('Maybe Awards', function(error, start_award) {
 	console.log(start_award);
 	pub.user.get('starnostar', function(error, starnostar) {
 		start_award.give().to(starnostar, function(error, result) {
+			console.log(error);
 			console.log(result);
 		});
 	});
