@@ -36,8 +36,8 @@ Then, once the publisher object is created, it is used to created a new currency
 This object represents a new currency. However, it can not be given to the user until it is created in the BigDoor API. Remember--the BigDoor API is used to strore and retrieve data. Objects created locally must be written to the server to be used. This is done using the save method.
 	xp.save(function(error, callback) { });
 
-This pattern should be familiar to node.js users--since saving the object requires a request to another server it uses a callback to communicate the result. All resource objects (meaning any object retrieved or created through the publisher interface, like currency for example) take a callback function when accessing the server. This is done when saving or retrieving items. And all callbacks must have the following signature:
-function(error, data) 
+This pattern should be familiar to node.js users--since saving the object requires an asyncronous request, it uses a callback to communicate the result. All resource objects (meaning any object retrieved or created through the publisher interface, like Currency for example) take a callback function when accessing the server. This is done when saving or retrieving items. And all callbacks have the following signature:
+	function(error, data)
 
 If error is null or undefined then the request was a sucess and data holds the response body. Otherwise, data is null or undefined and error contains the error information. error and data are mutually exlusive.
 
