@@ -191,6 +191,21 @@ bigdoor.publisher = (function(_) {
 			}
 		}
 
+		var create_or_update_user = function(callback) {
+			if ( this.saved ) {
+				object_server.put(this, callback);
+			} else {
+				object_server.post(this, _.bind(function(error, obj) {
+					if ( !error ) {
+						obj = obj[0]
+						mark_on_server(this);
+						callback(error, this);
+					} else {
+						callback(error, null);
+					}
+				}, this));
+			}
+		}
 
 		// create a resource if it doesn't exist on the server or
 		// update it if it does
@@ -202,7 +217,8 @@ bigdoor.publisher = (function(_) {
 					if ( !error ) {
 						obj = obj[0];
 						this.id = obj.id; // update the object with its id
-											//TODO update any changed fields
+										  //TODO update any changed fields
+						mark_on_server(this);
 						callback(error, this);
 					} else {
 						callback(error, null);
@@ -222,6 +238,7 @@ bigdoor.publisher = (function(_) {
 					// currency is created
 					cur = cur[0];
 					this.id = cur.id;
+					mark_on_server(this);
 					cur = this;
 					var subtrans = cur.cheque().variable_amount();
 					subtrans.save(function(error, subtrans) {
@@ -316,6 +333,7 @@ bigdoor.publisher = (function(_) {
 					object_server.post(this, _.bind(function(error, obj) {
 						obj = obj[0];
 						this.id = obj.id;
+						mark_on_server(this);
 						// transaction and subtransaction are saved
 						// need to link the two and then return the 
 						// subtransaction through the callback
@@ -992,6 +1010,18 @@ bigdoor.publisher = (function(_) {
 			);
 		}
 
+		// recursively apply the on_server property to all
+		// objects off the root
+		var mark_on_server = function(root) {
+			root.on_server = true;
+			for ( var i in root ) {
+				if ( typeof i == 'object' ) {
+					mark_on_server(i);
+				}
+			}
+			return root;
+		}
+
 		// retrieve a resource object by ID
 		var getByID = function(resource, id, callback) {
 			server.get(
@@ -999,11 +1029,9 @@ bigdoor.publisher = (function(_) {
 				{},
 				_.bind(
 					function(error, response, body) {
+						var temp = mark_on_server(this.fromJSON(body[0]));
 						if ( !error ) {
-							callback(
-								null, 
-								this.fromJSON(body[0])
-							);
+							callback(null, temp);
 						} else {
 							callback(error, null);
 						}
@@ -1033,10 +1061,14 @@ bigdoor.publisher = (function(_) {
 								),
 								this.fromJSON
 							);
+							results = _.map(
+								results,
+								function (x) { return mark_on_server(x); }
+							);
 
 							if ( results.length == 1 ) {
 								results = results[0];
-							} 
+							}
 
 							callback(null, results);
 
@@ -1095,7 +1127,7 @@ bigdoor.publisher = (function(_) {
 						if ( !error ) {
 							callback(
 								null, 
-								this.fromJSON(body[0])
+								mark_on_server(this.fromJSON(body[0]))
 							);
 						} else {
 							callback(error, null);

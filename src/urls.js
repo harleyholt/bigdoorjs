@@ -90,7 +90,9 @@ bigdoor.urls = (function() {
 		user: {
 			end_point: 'end_user',
 			get: function(obj) {
-				if ( obj.login ) {
+				if ( obj.login && obj.on_server ) { 
+					// since login will be there even if it hasn't been,
+					// written to the server yet, we have this special case
 					return this.end_point + '/' + obj.login;
 				} else {
 					return this.end_point + '/';
