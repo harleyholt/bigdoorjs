@@ -53,24 +53,35 @@ This will give 50 Experience points to example_user and returns her new balance 
 	var secret_key = 'b0435cee6f3d413c97754574cddeb3f8';
 	var publisher = require('bigdoor').publisher(app_key, secret_key);
 
-	// create a new currency called XP
+	// Create a new Currency called XP
 	var xp = publisher.currency({
 		title: 'XP',
 		description: 'Experience Points awarded to the user for performing valuable actions'
 	});
 
-	// save that currency
+	// Save that Currency to the BigDoor service
 	xp.save(function(error, xp) {
+
+		if ( error ) {
+			// handle error
+		}
+
 		// XP has been saved
-		// in order to give this to someone, we need to 
-		// retrieve a user by their end_user_login (their ID)
+		// Now we just need a User to give it to
 		publisher.user.get(
-			'example_end_user_login_string',
+			'example_user_login_string',
 			function(error, example_user) {
-				// give 50 of this new currency to this user
+
+				if ( error ) {
+					// handle error
+				}
+
+				// Give 50 of this new currency to this user
 				xp.give(50).to(example_user, function(error, balance) {
+					
 					console.log(example_user.end_user_login +
 						'now has ' + balance + xp.title);
+
 				});
 			}
 		);
