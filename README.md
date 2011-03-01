@@ -4,7 +4,7 @@ BigDoor supports gamification at the API level with RESTful web service.
 Points, virtual currency, awards, levels, and badges are stored, granted, and retrieved using HTTP requests. More information about the service is available for developers at [the BigDoor Publisher site](http://publisher.bigdoor.com).
 
 #bigdoorjs
-bigdoorjs is a javascript library that simplifies use of the web service. Rather than exposing the structure of the web API, it implements a subset of the functionality that is consistent and easy to implement.
+bigdoorjs is a javascript library that simplifies use of the web service. Rather than exposing the structure of the web API, it implements a subset of the functionality in order to achieve consistency and ease-of-use. The philosophy of bigdoorjs is that it is better to provide 90% of the functionality if it improves the ease with which the libary can be used.
 
 bigdoorjs can be used by node.js and in-browser applications.
 
