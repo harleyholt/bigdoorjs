@@ -49,6 +49,7 @@ To give 50 Experience Points to user example_user we call give and to on xp.
 This will give 50 Experience points to example_user and returns her new balance (or total number of points for that currency) through the callback.
 
 ### Implemented Example
+#### Giving Currency to a User
 	var app_key = 'd6e92052c79b4f329c1f79c3a87ce604';
 	var secret_key = 'b0435cee6f3d413c97754574cddeb3f8';
 	var publisher = require('bigdoor').publisher(app_key, secret_key);
@@ -85,4 +86,45 @@ This will give 50 Experience points to example_user and returns her new balance 
 				});
 			}
 		);
+	});
+
+#### Creating an Award Group
+	var right_path = publisher.award({
+		title: 'Down the Right Path',
+		description: 'You took your very first action in the game ' + 
+						'and of course we have to reward you now'
+	});
+	award.save(function(error, result) {
+
+		// Like all group members, Awards are not saved to the server 
+		// until it is added to an Award Group
+				'
+	});
+
+	var too_much_time = publisher.award({
+		title: 'Too Much Time',
+		description: 'Seriously, you completionist'
+	});
+	award.save(function(error, result) {
+
+		// This needs to be called before an Award Group is saved
+
+	});
+	
+	// group members are passed to the awardGroup function
+	var group = publisher.awardGroup({
+		title: 'Example Awards',
+		description: 'An example of creating awards'
+	}, right_path, too_much_time);
+	group.save(function(error, group) {
+
+		// This will also save all the group members that have been
+		// marked as saved
+
+		// awardGroup members are accessed through awards
+
+		group.awards[0].give().to(example_user, function(error, result) {
+			// awarded to user
+		});
+
 	});
