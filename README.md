@@ -88,6 +88,28 @@ This will give 50 Experience points to example_user and returns her new balance 
 		);
 	});
 
+#### Retrieving Currency by Title
+	// We can retrieve objects by their title
+	publisher.currency.get('XP', function(error, xp) {
+
+		xp.description = 'I am updating the description';
+		xp.save(function(error, updated_xp) {
+
+			// Updated_xp references same object as xp
+
+		})
+
+	});
+
+#### Retrieving Currency by ID
+	// Assuming ID of XP is 10, then we can also retrieve it by that ID
+	// by passing in a number
+	publisher.currency.get(10, function(error, xp) {
+
+		// Do things with XP
+
+	});
+
 #### Creating an Award Group
 	var right_path = publisher.award({
 		title: 'Down the Right Path',
