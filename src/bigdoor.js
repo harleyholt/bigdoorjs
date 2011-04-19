@@ -1067,6 +1067,8 @@ bigdoor.publisher = (function(_) {
 
 							if ( results.length == 1 ) {
 								results = results[0];
+							} else if ( results.length == 0 ) {
+								results = null;
 							}
 
 							callback(null, results);
