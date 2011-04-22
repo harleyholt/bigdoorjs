@@ -256,7 +256,11 @@ bigdoor.servers = (function(_) {
 						// so only do this if we didn't use proxy
 						// TODO: I hate cases like this--how can this
 						// be avoided?
-						content = JSON.parse(content);
+						try {
+							content = JSON.parse(content);
+						} catch(err) {
+							throw content;
+						}
 					} else { 
 						// the proxy changes the return structure
 						content = content.content;

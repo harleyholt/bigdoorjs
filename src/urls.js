@@ -95,7 +95,7 @@ bigdoor.urls = (function() {
 					// written to the server yet, we have this special case
 					return this.end_point + '/' + obj.login;
 				} else {
-					return this.end_point + '/';
+					return this.end_point;
 				}
 			}
 		},

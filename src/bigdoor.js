@@ -254,8 +254,8 @@ bigdoor.publisher = (function(_) {
 							cur.meta['instant'] = trans.id;
 							cur.save(function(error, obj) {
 								callback(error, cur);
-							}, this);
-						}, this);
+							});
+						});
 					});
 				}, this)
 			);

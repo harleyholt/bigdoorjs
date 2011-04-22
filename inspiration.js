@@ -2,17 +2,18 @@
 
 var publisher = require('./src/bigdoor').publisher,
 	servers = require('./src/servers'),
-	_ = require('underscore');
+	_ = require('underscore'),
+	async = require('async');
 
 
 var api_server = servers.api_server,
 	secure_server = servers.secure_server,
 	http_server = servers.http_server;
 
-var app_key = 'd6e92052c79b4f329c1f79c3a87ce604';
-var app_secret = 'b0435cee6f3d413c97754574cddeb3f8';
+var app_key = '95e8945f5b5f476cb422db0c14457bf4';
+var app_secret = '6aff58083311478e82a47460aafb6751';
 
-// harley+test_bdm_rhh507@bigdoor.coms
+// harley+test_bdm_rhh1003@bigdoor.coms
 var pub = publisher(
 	app_key,
 	app_secret,
@@ -20,11 +21,74 @@ var pub = publisher(
 		secure_server(
 			http_server(),
 			app_secret,
-			'local.publisher.bigdoor.com'
+			'api.bigdoor.com'
 		),
 		app_key
 	)
 );
+
+var results = { }
+
+console.log('starting');
+
+async.waterfall([
+	function(callback) { // create a currency
+		pub.currency({
+			title: 'Badge Currency',
+			description: 'A currency created for testing'
+		}).save(function(error, cur) {
+			callback(error, {currency:cur});
+		});
+	},
+	function(results, callback) { // create a level collection
+		var levels = [];
+		levels.push(pub.level({
+			title: 'Fledgling',
+			description: 'You are barely able to walk, but soon enough we\'ll whip you into shape',
+			threshold: 1
+		}));
+		levels.push(pub.level({
+			title: 'Novice',
+			description: 'You\'re not very good',
+			threshold: 2
+		}));
+		levels.push(pub.level({
+			title: 'Neophyte',
+			description: 'Learning is good, learning is fun, but you still suck',
+			threshold: 3
+		}));
+		levels.push(pub.level({
+			title: 'Expert',
+			description: '10000 hours',
+			threshold: 4
+		}));
+		levels.push(pub.level({
+			title: 'Guru',
+			description: 'And so the student has become the... Guru.',
+			threshold: 5
+		}));
+		for ( var i = 0; i < levels.length; i++ ) {
+			levels[i].save(function() { });
+		}
+		var group = pub.levelGroup({
+			title: 'The Learning Curve',
+			description: 'Your progress on your quest to learn everything',
+			currency: results.currency
+		}, levels);
+		console.log('saving group');
+		group.save(function(error, group) {
+			results.levels = group;
+			callback(error, results);
+		});
+	},
+	function(results, callback) { // create a user
+		pub.user('for ever and ever').save(function(error, user) {
+			results.user = user;
+			console.log(results);
+			callback(error, results);
+		});
+	}
+]);
 
 // create and save a user with an end_user_login of starnostar
 //pub.user('starnostar').save(function(error, user) {
@@ -34,7 +98,7 @@ var pub = publisher(
 // retrieve a user, a trasaction, and run the transaction against the user
 /**
 pub.user.get('starnostar', function(error, user) {
-	pub.transaction.get('grant Life Experience', function(error, transaction) {
+		pub.transaction.get('grant Life Experience', function(error, transaction) {
 		console.log(transaction.subtransactions);
 		transaction.execute(user, 10.00, function(error, result) {
 			console.log(result);
@@ -100,6 +164,7 @@ pub.currency.get('XP', function(error, xp) {
 });
 **/
 
+/**
 pub.award.get('Maybe Awards', function(error, start_award) {
 	console.log(start_award);
 	pub.user.get('starnostar', function(error, starnostar) {
@@ -109,6 +174,7 @@ pub.award.get('Maybe Awards', function(error, start_award) {
 		});
 	});
 });
+**/
 
 /**
  // create an award group
