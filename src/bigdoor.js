@@ -431,8 +431,8 @@ bigdoor.publisher = (function(_) {
 							_.extend({
 								currency_id: this.currency.id || this.currency,
 								default_amount: this.default_amount,
-								is_source: this.is_source,
-								variable_amount_allowed: this.variable_amount_allowed || false
+								is_source: this.is_source ? 1 : 0,
+								variable_amount_allowed: this.variable_amount_allowed ? 1 : 0
 							}, extras)
 						);
 					},
@@ -446,7 +446,7 @@ bigdoor.publisher = (function(_) {
 					currency: obj.currency,
 					good: obj.good,
 					default_amount: obj.default_amount || 1.00,
-					is_source: obj.is_source || true,
+					is_source: obj.is_source === undefined ? true : obj.is_source,
 					transaction: obj.transaction,
 					variable_amount: function(percent) {
 						this.group_ratio = percent;
