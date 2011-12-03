@@ -1,0 +1,16 @@
+{
+  "author": "Harley <harley@bigdoor.com>",
+  "name": "bigdoorjs",
+  "description": "BigDoor gamification library",
+  "version": "0.1.1",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/harleyholt/bigdoorjs.git"
+  },
+  "engines": ["node >= 0.4.11"],
+  "dependencies": {
+    "underscore": "*",
+    "request": "*",
+    "node-uuid": "*"
+  }
+}
