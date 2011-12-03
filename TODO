@@ -10,3 +10,6 @@
 	* // example_currency.give(20).to(example_end_user);
 * Attaching URLS and Attributes to resources
 * Use Promises or Continuations or whatever the hotness is these days
+
+BUGS:
+* a transaction set to give 0 creates a transaction of 1 on server

@@ -27,10 +27,8 @@ var pub = publisher(
 	)
 );
 
+/**
 var results = { }
-
-console.log('starting');
-
 async.waterfall([
 	function(callback) { // create a currency
 		pub.currency({
@@ -89,6 +87,7 @@ async.waterfall([
 		});
 	}
 ]);
+**/
 
 // create and save a user with an end_user_login of starnostar
 //pub.user('starnostar').save(function(error, user) {

@@ -355,6 +355,24 @@ bigdoor.publisher = (function(_) {
 			}
 		}
 
+		// these are basically fromJSON methods for specific records
+		var read_only_models = {
+			transaction_result: function(obj) {
+				return {
+					transaction_group_id: obj.transaction_group_id,
+					user: pub.user.fromJSON(obj.end_user)
+				}
+			},
+			currency_balance: function(obj) {
+				return {
+					title: obj.end_user_title || obj.pub_title,
+					description: obj.end_user_description || obj.pub_description,
+					current_balance: obj.current_balance,
+					pervious_balance: obj.previous_balance,
+					currency_id: obj.currency_id
+				}
+			}
+		}
 
 		// the pub object is returned
 		// the purpose of the resource objects contained with in is to define
@@ -383,6 +401,10 @@ bigdoor.publisher = (function(_) {
 					login: obj.login || obj,
 					best_guess_name: obj.best_guess_name ||'' ,
 					best_guess_profile_image: obj.best_guess_profile_image || '',
+					currency_balances: _.map(
+						obj.currency_balances,
+						function(x) { return read_only_models.currency_balance(x)}
+					),
 					guid: obj.guid || ''
 				}
 			},
@@ -513,7 +535,14 @@ bigdoor.publisher = (function(_) {
 						}
 						object_server.post(
 							private_models.transaction_execute(this, user, amount),
-							callback
+							function(error, results) { 
+								if ( results ) {
+									results = read_only_models.transaction_result(results);
+								}
+								if ( _.isFunction(callback) ) {
+									callback(error, results);
+								}
+							}
 						);
 					},
 					end_user_cap: obj.end_user_cap || -1,
@@ -1139,6 +1168,25 @@ bigdoor.publisher = (function(_) {
 					},
 					this
 				)
+			);
+		}
+
+		pub.transaction.execute = function(id, user, amount, callback) {
+			if ( _.isFunction(amount) ) {
+				callback = amount;
+				amount = null;
+			}
+			var transaction = {id: id}
+			object_server.post(
+				private_models.transaction_execute(transaction, user, amount),
+				function(error, results) { 
+					if ( results ) {
+						results = read_only_models.transaction_result(results[0]);
+					}
+					if ( _.isFunction(callback) ) {
+						callback(error, results);
+					}
+				}
 			);
 		}
 
